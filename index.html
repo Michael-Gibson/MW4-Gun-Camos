@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MW4 Camo Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <div>
+                <h1 class="app-title">MW4 CAMO TRACKER</h1>
+                <p class="app-subtitle">Camo grind &middot; Mastery &middot; DMZ loadout</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button id="exportBtn" class="ghost-button" title="Download a backup of all progress">Export</button>
+            <button id="importBtn" class="ghost-button" title="Restore progress from a backup file">Import</button>
+            <input id="importFile" type="file" accept="application/json,.json" hidden>
+            <button id="resetProgressBtn" class="reset-button" title="Reset all MW4 progress">Reset</button>
+        </div>
+    </header>
+
+    <nav id="tabsContainer" class="tabs-container"></nav>
+    <div id="legend" class="legend"></div>
+
+    <main id="gunListContainer">
+        <aside class="left-panel">
+            <input id="gunSearch" class="gun-search" type="search" placeholder="Search weapons..." autocomplete="off">
+            <div id="gunTypeList"></div>
+        </aside>
+        <section id="rightPanel" class="right-panel"></section>
+    </main>
+
+    <script src="mw4-data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
