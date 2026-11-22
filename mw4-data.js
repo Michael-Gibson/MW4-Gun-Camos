@@ -1,4 +1,4 @@
-// =========================
+ // =========================
 // MW4 TRACKER DATA
 // =========================
 // Edit this file to add/rename weapons, rename camos, or fill in challenge text.
@@ -102,6 +102,7 @@ const militaryLevels = {
     "KASTOV 762":           [9, 16, 25, 32, 39, 48, 56, 63],
     "AXION":                [9, 18, 25, 33, 40, 47, 54, 61],
     "CRONEN SQUALL":        [9, 16, 23, 30, 38, 44, 53, 59],
+    // Season 1 guns: sites disagree on Military levels, so check in game or use fromRemaining().
     "CRONEN OSPREY":        [0, 0, 0, 0, 0, 0, 0, 0],
     "PATRIOT XMR":          [11, 19, 27, 35, 42, 51, 58, 65],
     "ODEN":                 [12, 21, 25, 33, 39, 46, 53, 59],
@@ -186,6 +187,12 @@ const specialCamos = {
         ["URBAN SMOKE", ch("20 mounted kills", "75 mounted kills")],
         ["OPTICAL REVERB", ch("3 kills without dying 15 times", "Get 3 enemy kills without taking damage 50 times")]
     ],
+    // Season 1 DLC weapon (Battle Pass, free tier). Source: bosslobbies.gg + codcentral.net (Nov 2026).
+    "CRONEN OSPREY": [
+        ["IN THE WEEDS", ch("20 hipfire kills", "75 hipfire kills")],
+        ["DARK ICHOR", ch("50 kills while ADS", "125 kills while ADS")],
+        ["CHAINED", ch("2 kills without reloading 25 times", "2 kills without reloading 100 times")]
+    ],
     "PATRIOT XMR": [
         ["DUNE SEA", ch("20 hipfire kills", "75 hipfire kills")],
         ["SCORCH", ch("50 kills while using a suppressor", "125 kills while using a suppressor")],
@@ -211,6 +218,12 @@ const specialCamos = {
         ["SNIPER VEIL", ch("20 kills while moving", "75 kills while moving")],
         ["CARBONATED", ch("20 longshot kills", "75 longshot kills")],
         ["LIME", ch("40 headshot kills", "100 headshot kills")]
+    ],
+    // Season 1 DLC weapon (Battle Pass, free tier). Source: bosslobbies.gg + metaradar.gg + codcentral.net (Nov 2026).
+    "CSG-35": [
+        ["POLYHEDRON", ch("3 player kills without dying 20 times", "3 enemy kills without taking damage 30 times")],
+        ["RIND", ch("50 kills while using a suppressor", "125 kills while using a suppressor")],
+        ["BLACK GRIP", ch("50 kills while moving", "100 kills while moving")]
     ],
     "ISO NIGHTSHADE": [
         ["ASPHALT", ch("50 kills while ADS", "125 kills while ADS")],
