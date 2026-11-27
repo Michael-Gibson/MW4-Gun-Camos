@@ -79,9 +79,14 @@ const trackViews = {
 const ch = (mp, dmz) => ({ mp: `Get ${mp}`, dmz: `Get ${dmz}` });
 
 // ---- MILITARY ----
-// Military camos unlock by levelling the weapon (no kill challenge).
-// Exact levels are only published for a few guns so far; the rest show a generic line.
-// 0 = level not known yet (that camo shows the generic "level up this weapon" line).
+// Military camos unlock by levelling the weapon (no kill challenge). Each one shows
+// "Reach weapon level N" (the in-game wording).
+// 0 = level not published yet (that camo shows "Unlock level not published yet").
+// Sources (checked 27 Nov 2026): codmunity.gg weapon pages, warzoneloadout.games,
+// upblazed.com, gamerant, mw4camo.com (ARs, patch 1.005.001), bosslobbies.com, plus the
+// in-game M4 Military 1 = level 10. Most guns: 4-6 sites agree.
+// Lower confidence: CRONEN OSPREY and CSG-35 (3 sites agree, 2 others list a ladder that
+// looks copied from the Mojave .357), HYEON BURST Military 8 (62 on 5 sites, 63 on 2).
 //
 // GAME ONLY SHOWS A COUNTDOWN? ("Earn 22 more weapon unlocks using the ...")
 // That number counts from the gun's CURRENT weapon level, so:
@@ -96,56 +101,55 @@ const fromRemaining = (currentLevel, remaining) =>
 const militaryLevels = {
     // ASSAULT RIFLES
     "HAN 86":               [10, 18, 25, 34, 42, 50, 57, 65],
-    "M4":                   [9, 17, 25, 34, 43, 50, 58, 63],
-    "KASTOV 762":           [9, 16, 25, 32, 39, 48, 56, 63],
-    "AXION":                [9, 18, 25, 33, 40, 47, 54, 61],
-    "CRONEN SQUALL":        [9, 16, 23, 30, 38, 44, 53, 59],
-    // Season 1 guns: sites disagree on Military levels, so check in game or use fromRemaining().
-    "CRONEN OSPREY":        [0, 0, 0, 0, 0, 0, 0, 0],
-    "PATRIOT XMR":          [11, 19, 27, 35, 42, 51, 58, 65],
+    "M4":                   [10, 18, 26, 35, 39, 44, 51, 59],
+    "KASTOV 762":           [10, 19, 27, 37, 45, 54, 61, 67],
+    "AXION":                [10, 19, 26, 34, 41, 48, 55, 62],
+    "CRONEN SQUALL":        [10, 17, 24, 31, 39, 45, 54, 60],
+    "CRONEN OSPREY":        [9, 13, 16, 20, 23, 26, 29, 33],   // Season 1; lower confidence (see above)
+    "PATRIOT XMR":          [11, 20, 28, 36, 43, 52, 59, 66],
     "ODEN":                 [12, 21, 25, 33, 39, 46, 53, 59],
-    "HYEON BURST":          [9, 16, 25, 31, 39, 45, 54, 61],
+    "HYEON BURST":          [10, 17, 26, 32, 40, 49, 55, 62],   // Military 8: 62 or 63
     // SMGS
-    "WZ.55 STRIGA":         [6, 11, 13, 16, 19, 22, 25, 28],
-    "X-58 NYX":             [8, 14, 19, 1, 3, 5, 28, 10],
-    "CSG-35":               [0, 0, 0, 0, 0, 0, 0, 0],
+    "WZ.55 STRIGA":         [12, 18, 23, 29, 36, 41, 47, 54],
+    "X-58 NYX":             [9, 15, 20, 25, 29, 35, 42, 47],
+    "CSG-35":               [8, 10, 14, 17, 19, 23, 27, 29],   // Season 1; lower confidence (see above)
     "ISO NIGHTSHADE":       [12, 19, 25, 31, 38, 44, 50, 57],
-    "PPSH-41":              [0, 0, 0, 0, 0, 0, 0, 0],
-    "VEL 46":               [0, 0, 0, 0, 0, 0, 0, 0],
+    "PPSH-41":              [11, 17, 23, 31, 38, 44, 51, 57],
+    "VEL 46":               [9, 15, 22, 28, 33, 40, 47, 54],
     // SHOTGUNS
     "REZI-12":              [11, 18, 26, 30, 38, 42, 47, 54],
-    "JAK 12":               [0, 0, 0, 0, 0, 0, 0, 0],
-    "WARLORD":              [0, 0, 0, 0, 0, 0, 0, 0],
+    "JAK 12":               [0, 0, 0, 0, 0, 0, 0, 0],           // unreleased event weapon
+    "WARLORD":              [13, 19, 25, 30, 37, 43, 49, 55],
     // LMGS
     "FINN LMG":             [12, 18, 24, 31, 37, 42, 48, 53],
-    "TYPE 73":              [0, 0, 0, 0, 0, 0, 0, 0],
-    "APOC-338":             [0, 0, 0, 0, 0, 0, 0, 0],
+    "TYPE 73":              [12, 19, 26, 34, 41, 48, 55, 61],
+    "APOC-338":             [9, 15, 22, 26, 33, 40, 44, 51],
     // MARKSMAN RIFLES
     "MAR-9":                [10, 19, 29, 38, 45, 52, 58, 69],
-    "ORIS 8.6":             [0, 0, 0, 0, 0, 0, 0, 0],
-    "MOSIN-NAGANT":         [0, 0, 0, 0, 0, 0, 0, 0],
+    "ORIS 8.6":             [11, 18, 27, 33, 42, 49, 55, 61],
+    "MOSIN-NAGANT":         [10, 17, 25, 31, 38, 47, 55, 61],
     // SNIPER RIFLES
-    "SIGNAL 50":            [0, 0, 0, 0, 0, 0, 0, 0],
+    "SIGNAL 50":            [10, 18, 28, 35, 43, 52, 57, 67],
     "KG-7 VULCAN":          [13, 22, 31, 38, 47, 54, 61, 69],
-    "ASTAROTH .57":         [0, 0, 0, 0, 0, 0, 0, 0],
+    "ASTAROTH .57":         [10, 15, 20, 26, 32, 37, 42, 48],
     // PISTOLS
     "SANG 9MM":             [9, 13, 17, 21, 25, 28, 31, 35],
-    "KRAIT P68":            [0, 0, 0, 0, 0, 0, 0, 0],
-    ".50 GS":               [0, 0, 0, 0, 0, 0, 0, 0],
-    "MOJAVE .357":          [0, 0, 0, 0, 0, 0, 0, 0],
-    // LAUNCHERS
-    "RPG-8":                [0, 0, 0, 0, 0, 0, 0, 0],
-    "PILA":                 [0, 0, 0, 0, 0, 0, 0, 0],
-    "JOKR":                 [0, 0, 0, 0, 0, 0, 0, 0],
-    "PM-40 ANVIL":          [0, 0, 0, 0, 0, 0, 0, 0],
+    "KRAIT P68":            [10, 14, 18, 22, 25, 28, 32, 35],
+    ".50 GS":               [10, 16, 22, 28, 32, 36, 40, 46],
+    "MOJAVE .357":          [9, 13, 18, 22, 26, 30, 35, 40],
+    // LAUNCHERS (all four share one ladder, as do most sites' launcher pages)
+    "RPG-8":                [6, 11, 16, 21, 26, 31, 36, 41],
+    "PILA":                 [6, 11, 16, 21, 26, 31, 36, 41],
+    "JOKR":                 [6, 11, 16, 21, 26, 31, 36, 41],
+    "PM-40 ANVIL":          [6, 11, 16, 21, 26, 31, 36, 41],
     // MELEE
-    "FSS CARBON EDGE 1095": [0, 0, 0, 0, 0, 0, 0, 0],
-    "ZLR TALONHAWK":        [0, 0, 0, 0, 0, 0, 0, 0]
+    "FSS CARBON EDGE 1095": [6, 11, 16, 21, 26, 31, 36, 41],
+    "ZLR TALONHAWK":        [0, 0, 0, 0, 0, 0, 0, 0]            // unreleased event weapon
 };
 
 const buildMilitary = (gun) => Array.from({ length: 8 }, (_, i) => {
     const level = (militaryLevels[gun] || [])[i];
-    const text = level ? `Reach weapon level ${level}` : "Earn weapon unlocks (level up this weapon)";
+    const text = level ? `Reach weapon level ${level}` : "Unlock level not published yet (level up this weapon)";
     return {
         id: `mil${i + 1}`,
         name: `MILITARY ${i + 1}`,

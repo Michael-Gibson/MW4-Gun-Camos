@@ -23,7 +23,7 @@ python -m http.server
 
 | Tab | What it tracks |
 | --- | --- |
-| **Camo Track** | The full per-weapon track: 8 Military camos, 3 weapon-specific Special camos, then Gold → Platinum → Harmonic Break → Divergence. A **Multiplayer / DMZ** toggle switches the challenge text for each view. Camos earnable in both modes are shared, so checking one in either view marks it done in both. Gold, Platinum, Harmonic Break and Divergence each show a live **LOCKED / ✓ OPEN** line built from what you've ticked, for example "LOCKED · 6/8 Assault Rifle Golds" plus the weapons that still need Gold, or "12/33 Platinum camos (any weapon)". **Divergence is account-wide:** tick it on any weapon and it's done on all, and it's earned automatically at 33 Harmonic Breaks. |
+| **Camo Track** | The full per-weapon track: 8 Military camos (each shows the weapon level that unlocks it, e.g. "Reach weapon level 26"), 3 weapon-specific Special camos, then Gold → Platinum → Harmonic Break → Divergence. A **Multiplayer / DMZ** toggle switches the challenge text for each view. Camos earnable in both modes are shared, so checking one in either view marks it done in both. Gold, Platinum, Harmonic Break and Divergence each show a live **LOCKED / ✓ OPEN** line built from what you've ticked, for example "LOCKED · 6/8 Assault Rifle Golds" plus the weapons that still need Gold, or "12/33 Platinum camos (any weapon)". **Divergence is account-wide:** tick it on any weapon and it's done on all, and it's earned automatically at 33 Harmonic Breaks. |
 | **Prestige** | Weapon Prestige camos (the Pyroclast set), per weapon. |
 | **Mastery** | The account-wide Mastery camos, with **Multiplayer**, **DMZ** and **Warzone** side by side. Each camo shows its challenge, the camo it needs first, and a progress counter (e.g. 112 / 300) that ticks the camo done when you reach the target. A **Divergence** box at the top counts your Harmonic Breaks toward the 33 that open Mastery. |
 
@@ -57,6 +57,7 @@ Overall completion for the Camo Track, Prestige and Mastery, plus DMZ manual and
 The `tests/` folder has browser tests that drive the real app in headless Microsoft Edge, which is installed on Windows by default. They cover:
 - DMZ weapon cards and the Season 1 camos;
 - Camo Track lock status and account-wide Divergence;
+- Military unlock levels for every gun;
 - Notes & Materials (layout, shopping list, messages, sorting);
 - 3D Printer upgrades and costs;
 - the Mastery tab;
@@ -95,7 +96,7 @@ Tier and rarity colors are defined in [`styles.css`](styles.css) under **TIER CO
 
 ### Data accuracy
 
-Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Season 1 weapons (Cronen Osprey, CSG-35) come from community guides published after they released. Some weapons don't have published Military unlock levels yet, and the JAK 12 and ZLR Talonhawk Special camos haven't been revealed (both are upcoming in-season event rewards). 3D Printer upgrade costs come from community sites (Nov 2026); several later tiers are community-reported or have no confirmed cash cost, and those show a ⚠ note or "$ ?" in the app. MIA Recovery IV still has no confirmed cash cost. Unlock rules for the Completionist camos follow the in-game wording (Nov 2026):
+Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Season 1 weapons (Cronen Osprey, CSG-35) come from community guides published after they released. Military unlock levels were checked across 4–6 community sites for every gun (Nov 2026), plus the M4 in game. The Cronen Osprey and CSG-35 levels and the Hyeon Burst's Military 8 are lower confidence: worth checking in game. The JAK 12 and ZLR Talonhawk Military levels and Special camos haven't been revealed (both are upcoming in-season event rewards). 3D Printer upgrade costs come from community sites (Nov 2026); several later tiers are community-reported or have no confirmed cash cost, and those show a ⚠ note or "$ ?" in the app. MIA Recovery IV still has no confirmed cash cost. Unlock rules for the Completionist camos follow the in-game wording (Nov 2026):
 - **Platinum** needs a fixed number of Golds per class, set at launch (AR 8, SMG 5, Shotgun 2, LMG 3, Marksman 3, Sniper 3, Pistol 4, Launcher 4, Melee 1). Season 1 guns can count toward it but didn't raise it.
 - **Harmonic Break** needs 33 Platinum camos on any weapons.
 - **Divergence** is one account-wide camo, earned after 33 Harmonic Breaks.
@@ -123,6 +124,11 @@ Newest first. Your saved progress carries over through every change listed here.
 
 ### 2026-11-27
 
+- **Military unlock levels for every gun:** Military 1–8 now show "Reach weapon level N" on all 35 released guns. JAK 12 and ZLR Talonhawk (unreleased) say "Unlock level not published yet".
+  - **Corrected:** M4, Kastov 762, Axion, Cronen Squall, Patriot XMR and Hyeon Burst (mostly 1 level too low before; the M4's Military 1 = level 10 was confirmed in game), WZ.55 Striga, and X-58 NYX (its levels were scrambled).
+  - **Filled in:** Cronen Osprey, CSG-35, PPSh-41, Vel 46, Warlord, Type 73, APOC-338, Oris 8.6, Mosin-Nagant, Signal 50, Astaroth .57, Krait P68, .50 GS, Mojave .357, the four launchers and the FSS Carbon Edge 1095.
+  - **Unchanged (already right):** Han 86, Oden, ISO Nightshade, Rezi-12, FiNN LMG, MAR-9, KG-7 Vulcan, SANG 9mm.
+- New test suite `tests/test-military.js` checks all 37 guns in both views. There are now seven suites with 334 checks.
 - **"Why is this locked?" on the Camo Track:** Gold, Platinum, Harmonic Break and Divergence each show a live **LOCKED / ✓ OPEN** line under the challenge, which updates as you tick boxes. It's information only and never stops you ticking a camo.
   - **Gold:** "LOCKED · 6/11 Military + Special done".
   - **Platinum:** "LOCKED · 6/8 Assault Rifle Golds", with how many more are needed and which weapons in the class have no Gold yet.
