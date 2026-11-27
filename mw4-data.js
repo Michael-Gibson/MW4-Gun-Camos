@@ -81,12 +81,14 @@ const ch = (mp, dmz) => ({ mp: `Get ${mp}`, dmz: `Get ${dmz}` });
 // ---- MILITARY ----
 // Military camos unlock by levelling the weapon (no kill challenge). Each one shows
 // "Reach weapon level N" (the in-game wording).
-// 0 = level not published yet (that camo shows "Unlock level not published yet").
+// 0 = level not confirmed yet (that camo shows "Unlock level not confirmed yet").
 // Sources (checked 27 Nov 2026): codmunity.gg weapon pages, warzoneloadout.games,
-// upblazed.com, gamerant, mw4camo.com (ARs, patch 1.005.001), bosslobbies.com, plus the
-// in-game M4 Military 1 = level 10. Most guns: 4-6 sites agree.
-// Lower confidence: CRONEN OSPREY and CSG-35 (3 sites agree, 2 others list a ladder that
-// looks copied from the Mojave .357), HYEON BURST Military 8 (62 on 5 sites, 63 on 2).
+// upblazed.com, gamerant, mw4camo.com (ARs, patch 1.005.001), bosslobbies.com. Most guns:
+// 4-6 sites agree.
+// Checked in game by the owner (27 Nov 2026): M4 Military 1 = 10 (matches the sites);
+// CSG-35 Military 1 = 11 and Military 8 = 62, Cronen Osprey Military 1 = 12. Every site
+// had both Season 1 guns wrong, so their other levels stay 0 until checked in game.
+// Lower confidence: HYEON BURST Military 8 (62 on 5 sites, 63 on 2).
 //
 // GAME ONLY SHOWS A COUNTDOWN? ("Earn 22 more weapon unlocks using the ...")
 // That number counts from the gun's CURRENT weapon level, so:
@@ -105,14 +107,14 @@ const militaryLevels = {
     "KASTOV 762":           [10, 19, 27, 37, 45, 54, 61, 67],
     "AXION":                [10, 19, 26, 34, 41, 48, 55, 62],
     "CRONEN SQUALL":        [10, 17, 24, 31, 39, 45, 54, 60],
-    "CRONEN OSPREY":        [9, 13, 16, 20, 23, 26, 29, 33],   // Season 1; lower confidence (see above)
+    "CRONEN OSPREY":        [12, 0, 0, 0, 0, 0, 0, 0],          // Season 1; Military 1 checked in game, rest not confirmed
     "PATRIOT XMR":          [11, 20, 28, 36, 43, 52, 59, 66],
     "ODEN":                 [12, 21, 25, 33, 39, 46, 53, 59],
     "HYEON BURST":          [10, 17, 26, 32, 40, 49, 55, 62],   // Military 8: 62 or 63
     // SMGS
     "WZ.55 STRIGA":         [12, 18, 23, 29, 36, 41, 47, 54],
     "X-58 NYX":             [9, 15, 20, 25, 29, 35, 42, 47],
-    "CSG-35":               [8, 10, 14, 17, 19, 23, 27, 29],   // Season 1; lower confidence (see above)
+    "CSG-35":               [11, 0, 0, 0, 0, 0, 0, 62],         // Season 1; Military 1 and 8 checked in game, rest not confirmed
     "ISO NIGHTSHADE":       [12, 19, 25, 31, 38, 44, 50, 57],
     "PPSH-41":              [11, 17, 23, 31, 38, 44, 51, 57],
     "VEL 46":               [9, 15, 22, 28, 33, 40, 47, 54],
@@ -149,7 +151,7 @@ const militaryLevels = {
 
 const buildMilitary = (gun) => Array.from({ length: 8 }, (_, i) => {
     const level = (militaryLevels[gun] || [])[i];
-    const text = level ? `Reach weapon level ${level}` : "Unlock level not published yet (level up this weapon)";
+    const text = level ? `Reach weapon level ${level}` : "Unlock level not confirmed yet (level up this weapon)";
     return {
         id: `mil${i + 1}`,
         name: `MILITARY ${i + 1}`,
