@@ -515,6 +515,22 @@ button { font-family: inherit; }
 /* ===== RIGHT PANEL ===== */
 .right-panel-header { margin-bottom: 8px; }
 
+/* Gun pages (Camo Track + Prestige): the row with the gun name and the MULTIPLAYER / DMZ /
+   WARZONE toggle stays pinned to the top while you scroll the camos. The header box steps
+   aside (display: contents) so the row can stick for the whole page, not just the header. */
+.camo-header { display: contents; }
+.camo-header > .title-row {
+    position: sticky;
+    top: -20px;                 /* the panel's top padding: stick flush with its top edge */
+    z-index: 6;
+    margin: -20px -24px 6px;    /* stretch over the panel padding so nothing shows behind it */
+    padding: 16px 24px 10px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    border-radius: 10px 10px 0 0;
+}
+.camo-header > :last-child { margin-bottom: 12px; }
+
 .title-row {
     display: flex;
     align-items: center;

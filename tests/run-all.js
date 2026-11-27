@@ -15,6 +15,7 @@ const suites = [
     ['test-weapon-level.js', 'SET LEVEL menu (level + prestige auto-ticks)'],
     ['test-warzone.js', 'Warzone view (all guns, shared ticks)'],
     ['test-weapon-order.js', 'In-game weapon order + renamed guns'],
+    ['test-sticky-header.js', 'Pinned gun row (name + MP / DMZ / WARZONE)'],
     ['test-notes.js', 'Notes & Materials: layout, shopping list, messages, sorting'],
     ['test-upgrades.js', '3D Printer upgrades + costs'],
     ['test-mastery.js', 'Mastery tab'],

@@ -1220,23 +1220,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const view = isTrack ? getTrackView() : null;
         const entries = getEntries(mode, gunName, view);
 
-        const header = el('div', 'right-panel-header');
+        // camo-header: its title row (gun name + MP / DMZ / WARZONE) stays pinned to the top
+        // while you scroll the camos (styles.css)
+        const header = el('div', 'right-panel-header camo-header');
         const titleRow = el('div', 'title-row');
         titleRow.appendChild(el('h2', null, gunName));
         const tierPill = el('span', 'tier-pill');
         titleRow.appendChild(tierPill);
 
-        // Per-gun MP / DMZ toggle on the camo track
+        // MP / DMZ / WARZONE toggle on the camo track (one setting for every gun)
         if (isTrack) {
             const toggle = buildSegmented(
                 trackViewKeys.map(k => [k, trackViews[k]]),
                 view,
                 (picked) => {
+                    // Keep your place: the panel scrolls on wide screens, the page on phones
                     const scrollBefore = rightPanel.scrollTop;
+                    const pageScrollBefore = window.scrollY;
                     state.ui.trackMode = picked; // applies to every gun until changed back
                     saveState();
                     renderCamoPanel(gunName);
                     rightPanel.scrollTop = scrollBefore;
+                    window.scrollTo(0, pageScrollBefore);
                 },
                 'view-toggle'
             );
