@@ -13,6 +13,7 @@ const suites = [
     ['test-military.js', 'Military camo unlock levels (all guns)'],
     ['test-special-levels.js', 'Special camo unlock levels (all guns)'],
     ['test-weapon-level.js', 'SET LEVEL menu (level + prestige auto-ticks)'],
+    ['test-warzone.js', 'Warzone view (all guns, shared ticks)'],
     ['test-notes.js', 'Notes & Materials: layout, shopping list, messages, sorting'],
     ['test-upgrades.js', '3D Printer upgrades + costs'],
     ['test-mastery.js', 'Mastery tab'],

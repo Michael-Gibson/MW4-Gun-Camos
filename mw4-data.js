@@ -55,21 +55,24 @@ const modeLabels = {
 // Views for the per-gun toggle on the Camo Track tab.
 const trackViews = {
     mp: "MULTIPLAYER",
-    dmz: "DMZ"
+    dmz: "DMZ",
+    wz: "WARZONE"
 };
+// Shown when a camo's Warzone target hasn't been published yet
+const WZ_NOT_PUBLISHED = "Warzone challenge not published yet";
 
 // =========================
-// CAMO TRACK (MP + DMZ)
+// CAMO TRACK (MP + DMZ + WARZONE)
 // =========================
 // Every camo has:
 //   id        - what progress is saved under (don't change once you've started tracking)
-//   modes     - which toggle views show it: ["mp"], ["dmz"], or ["mp", "dmz"]
-//   challenge - { mp: "...", dmz: "..." } text for each view
+//   modes     - which toggle views show it, e.g. ["mp", "dmz", "wz"]
+//   challenge - { mp: "...", dmz: "...", wz: "..." } text for each view
 //   unlock    - optional small note about when the challenge opens
 //
-// A camo listed in BOTH modes is the same camo: check it in either view and it
-// shows as done in both. Military, Special, and Gold..Divergence can all be earned
-// in MP or DMZ, so they're all shared. The two views differ only in challenge text.
+// A camo listed in several modes is the same camo: check it in any view and it
+// shows as done in all of them. Military, Special, and Gold..Divergence can all be earned
+// in MP, DMZ or Warzone, so they are all shared. The views differ only in challenge text.
 //
 // Challenge text sources: Infinity Ward's MW4 progression blog (Han 86 example),
 // Destructoid / codmunity / ConquestCapped camo guides (launch week, Oct 2026).
@@ -157,8 +160,8 @@ const buildMilitary = (gun) => Array.from({ length: 8 }, (_, i) => {
     return {
         id: `mil${i + 1}`,
         name: `MILITARY ${i + 1}`,
-        modes: ["mp", "dmz"],
-        challenge: { mp: text, dmz: text },
+        modes: ["mp", "dmz", "wz"],
+        challenge: { mp: text, dmz: text, wz: text }, // weapon level counts in every mode
         level: level || 0, // weapon level that unlocks it (0 = unknown); used by the weapon level box
         section: "MILITARY"
     };
@@ -214,8 +217,8 @@ const specialLevels = {
     // SNIPER RIFLES
     "SIGNAL 50":            [28, 52, 74],
     "KG-7 VULCAN":          [22, 47, 75],
-    // PISTOLS
     "ASTAROTH .57":         [20, 37, 54],
+    // PISTOLS
     "SANG 9MM":             [13, 25, 38],   // official
     "KRAIT P68":            [13, 25, 38],
     ".50 GS":               [18, 34, 50],
@@ -423,14 +426,90 @@ const specialCamos = {
     ]
 };
 
+// ---- WARZONE challenge text for the Special camos (same order as specialCamos) ----
+// MW4 weapons came to Warzone in Season 1 (6 Nov 2026). Camo progress is shared with
+// every other mode ("Camo unlocks will be shared between Warzone and all other modes",
+// Season 1 patch notes), so these are the same camos with Warzone targets.
+// Sources (checked 27 Nov 2026): codmunity.gg weapon pages, gamerant mastery checklist,
+// bosslobbies.com weapon pages; all three agree unless noted. "Silencer" in the sources
+// is written "suppressor" here to match the MP/DMZ text. "" = not published yet.
+const specialWarzone = {
+    // ASSAULT RIFLES
+    "HAN 86": ["10 mounted kills against players", "25 player kills while using a suppressor", "3 player kills without dying 8 times"],
+    "M4": ["10 point blank kills against players", "10 mounted kills against players", "15 kills from behind players"],
+    "KASTOV 762": ["3 kills without dying 5 times", "10 longshot kills against players", "15 hipfire kills against players"],
+    "AXION": ["10 longshot kills against players", "10 player kills with the Miri 40mm Grenade Launcher", "2 kills without reloading 15 times against players"],
+    "CRONEN SQUALL": ["10 point blank kills against players", "10 mounted kills against players", "3 kills without dying 10 times against players"],
+    "CRONEN OSPREY": ["10 hipfire kills against players", "30 kills while ADS against players", "2 kills without reloading 20 times against players"],
+    "PATRIOT XMR": ["10 hipfire kills against players", "25 player kills while using a suppressor", "15 longshot kills against players"],
+    "ODEN": ["15 player kills with the Miri 40mm Grenade Launcher", "2 kills without reloading 5 times against players", "45 kills while ADS against players"],
+    "HYEON BURST": ["2 kills without reloading 5 times against players", "10 longshot kills against players", "45 player kills while using a suppressor"],
+    // SMGS
+    "WZ.55 STRIGA": ["25 player kills while using a suppressor", "10 player kills while jumping", "20 point blank kills against players"],
+    "X-58 NYX": ["10 player kills while moving", "10 longshot kills against players", "20 headshot kills against players"],
+    "CSG-35": ["3 player kills without dying 5 times", "30 player kills while using a suppressor", "20 player kills while moving"],
+    // ISO NIGHTSHADE Brown: all 3 sites say longshots in Warzone (MP/DMZ are "kills without dying"); check in game
+    "ISO NIGHTSHADE": ["25 player kills while ADS", "2 kills within 10 seconds 5 times", "10 longshot kills against players"],
+    "PPSH-41": ["2 kills within 10 seconds 5 times", "10 longshot kills against players", "45 player kills while ADS"],
+    "VEL 46": ["25 player kills while ADS", "10 player kills while prone", "10 headshots against players"],
+    // SHOTGUNS
+    "REZI-12": ["10 point blank kills against players", "5 longshot kills against players", "20 player kills while jumping"],
+    "WARLORD": ["10 player kills while moving", "2 kills within 10 seconds 5 times", "25 player kills while prone"],
+    // LMGS
+    // FINN LMG Green Tiger: codmunity + bosslobbies say "without reloading"; gamerant says "2 kills within 10 seconds 5 times" (verify)
+    "FINN LMG": ["10 point blank kills against players", "2 kills without reloading 5 times against players", "15 longshot kills against players"],
+    "TYPE 73": ["10 mounted kills against players", "2 kills within 10 seconds 5 times", "20 headshot kills against players"],
+    "APOC-338": ["10 hipfire kills against players", "10 longshot kills against players", "45 player kills while prone"],
+    // MARKSMAN RIFLES (MAR-9: bosslobbies, metaradar, gamerant; codmunity has no camo section)
+    "MAR-9": ["10 mounted kills against players", "15 player kills while crouched", "15 longshot kills against players"],
+    "ORIS 8.6": ["5 quickscope kills against players", "2 player kills within 10 seconds 10 times", "3 kills without dying 10 times against players"],
+    "MOSIN-NAGANT": ["15 headshots against players", "2 player kills without reloading 5 times", "45 player kills while focused"],
+    // SNIPER RIFLES
+    "SIGNAL 50": ["2 player kills within 5 seconds 5 times", "10 quickscope kills against players", "20 longshot kills against players"],
+    "KG-7 VULCAN": ["5 hipfire kills against players", "10 headshot kills against players", "2 player kills without taking damage 10 times"],
+    "ASTAROTH .57": ["3 player kills without dying 5 times", "10 mounted kills against players", "2 player kills within 5 seconds 10 times"],
+    // PISTOLS
+    "SANG 9MM": ["15 player kills while ADS", "3 player kills without dying 3 times", "25 player kills while using Akimbo"],
+    "KRAIT P68": ["10 sliding kills", "10 point blank kills against players", "25 player kills while using a suppressor"],
+    ".50 GS": ["10 headshot kills against players", "2 kills within 10 seconds 5 times", "15 point blank kills against players"],
+    "MOJAVE .357": ["10 player kills without taking damage from the target", "2 player kills without reloading 5 times", "15 point blank kills against players"],
+    // LAUNCHERS (5 sites incl. timesaver)
+    "RPG-8": ["5 player kills while prone", "5 longshot kills against players", "DESTROY:15 killstreaks or enemy vehicles"],
+    "PILA": ["5 direct shot kills against players", "2 kills within 10 seconds 3 times", "DESTROY:15 killstreaks or enemy vehicles"],
+    "JOKR": ["2 kills within 10 seconds 3 times", "5 longshot kills against players", "DESTROY:15 killstreaks or vehicles"],
+    "PM-40 ANVIL": ["10 direct shot kills against players", "2 kills without reloading 3 times against players", "20 player kills while moving"],
+    // MELEE
+    "FSS CARBON EDGE 1095": ["15 player kills while jumping", "15 player kills using the heavy melee finisher", "2 kills within 5 seconds 15 times against players"]
+};
+// "DESTROY:..." = a Destroy challenge (shown as "Destroy ..." instead of "Get ...")
+const wzText = (t) => (t.startsWith("DESTROY:") ? `Destroy ${t.slice(8)}` : `Get ${t}`);
+
+// ---- WARZONE challenge text for the Completionist camos, per class ----
+// Unlock rules are the same as MP/DMZ. Gold is "8 player kills in a single match" for
+// every class (launchers too). Divergence has no Warzone challenge (account-wide unlock).
+// Sources (27 Nov 2026): codmunity, bosslobbies, gamerant, metaradar (+ timesaver for
+// launchers); 3-5 agree on each. Pistol Harmonic Break: 20 on 3 sites, 10 on gamerant (verify).
+const classWarzone = {
+    "ASSAULT RIFLES":  { platinum: "25 headshots against players", harmonic: "2 player kills within 10 seconds 15 times" },
+    "SMGS":            { platinum: "15 player kills from behind", harmonic: "25 hipfire kills against players" },
+    "SHOTGUNS":        { platinum: "25 hipfire kills against players", harmonic: "2 player kills without reloading 15 times" },
+    "LMGS":            { platinum: "3 player kills without dying 10 times", harmonic: "2 player kills without releasing the trigger 15 times" },
+    "MARKSMAN RIFLES": { platinum: "35 player kills while prone", harmonic: "45 player kills without taking damage from the target" },
+    "SNIPER RIFLES":   { platinum: "35 player kills while prone", harmonic: "35 one shot kills against players" },
+    "PISTOLS":         { platinum: "10 player kills from behind", harmonic: "20 hipfire kills against players" },
+    "LAUNCHERS":       { platinum: "2 player kills without taking damage 8 times", harmonic: "10 player kills in a match 5 times" },
+    "MELEE":           { platinum: "3 kills without dying 10 times against players", harmonic: "15 player kills from behind" }
+};
+
 const buildSpecial = (gun) => Array.from({ length: 3 }, (_, i) => {
     const [name, challenge] = (specialCamos[gun] || [])[i] || [];
     const level = (specialLevels[gun] || [])[i];
+    const wz = (specialWarzone[gun] || [])[i];
     return {
         id: `sp${i + 1}`,
         name: name || `SPECIAL ${i + 1}`,
-        modes: ["mp", "dmz"],
-        challenge: challenge || { mp: "", dmz: "" },
+        modes: ["mp", "dmz", "wz"],
+        challenge: { ...(challenge || { mp: "", dmz: "" }), wz: wz ? wzText(wz) : (name ? WZ_NOT_PUBLISHED : "") },
         unlock: !name ? "Not published yet for this weapon"
             : level ? `Opens at weapon level ${level}` : "Unlock level not confirmed yet",
         level: (name && level) || 0, // weapon level that opens it (0 = unknown)
@@ -520,37 +599,39 @@ const buildCompletionist = (type) => {
     const c = classChallenges[type] || {};
     const empty = { mp: "", dmz: "" };
     const goldNeeded = c.goldNeeded || 0;
+    const wz = { gold: "8 player kills in a single match", ...(classWarzone[type] || {}) }; // Warzone text (no "Get")
+    const withWz = (text, wzText) => ({ ...text, wz: wzText ? `Get ${wzText}` : WZ_NOT_PUBLISHED });
     const divergence = `Earned once for your account after ${harmonicNeededForDivergence} Harmonic Break challenges; it unlocks on every weapon at once`;
     // gate = what the app counts for the live "LOCKED / OPEN" line under each camo
     return [
         {
             id: "gold", name: "GOLD", tier: "gold",
-            challenge: ch("15 player kills in a single match",
-                type === "LAUNCHERS" ? "50 enemy kills in a single DMZ match" : "100 enemy kills in a single DMZ match"),
+            challenge: withWz(ch("15 player kills in a single match",
+                type === "LAUNCHERS" ? "50 enemy kills in a single DMZ match" : "100 enemy kills in a single DMZ match"), wz.gold),
             unlock: "Opens after all 8 Military and 3 Special camos on this weapon",
             gate: { kind: "weapon" }
         },
         {
             id: "platinum", name: "PLATINUM", tier: "platinum",
-            challenge: c.platinum || empty,
+            challenge: withWz(c.platinum || empty, wz.platinum),
             unlock: `Opens after ${goldNeeded} Gold camo${goldNeeded === 1 ? "" : "s"} on ${label} weapons`,
             gate: { kind: "classGold", need: goldNeeded, label }
         },
         {
             id: "harmonic", name: "HARMONIC BREAK", tier: "harmonic",
-            challenge: c.harmonic || empty,
+            challenge: withWz(c.harmonic || empty, wz.harmonic),
             unlock: `Opens after ${platinumNeededForHarmonic} Platinum camos on any weapons (account-wide)`,
             gate: { kind: "platinumTotal", need: platinumNeededForHarmonic }
         },
         {
             // Account-wide: ticking it on one weapon ticks it on all (script.js keeps one flag)
             id: "divergence", name: "DIVERGENCE", tier: "divergence",
-            challenge: { mp: divergence, dmz: divergence },
+            challenge: { mp: divergence, dmz: divergence, wz: divergence },
             unlock: "Account-wide: tick it on any weapon and it's done on every weapon",
             account: true,
             gate: { kind: "harmonicTotal", need: harmonicNeededForDivergence }
         }
-    ].map(camo => ({ ...camo, modes: ["mp", "dmz"], section: "COMPLETIONIST" }));
+    ].map(camo => ({ ...camo, modes: ["mp", "dmz", "wz"], section: "COMPLETIONIST" }));
 };
 
 const buildTrack = (gun, type) => [

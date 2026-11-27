@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Every camo gets a storage key: its id if it has one, otherwise its position.
     // getEntries(mode, gun, view) -> [{ camo, key }]. For the camo track, pass a view
-    // ('mp' or 'dmz') to get only the camos shown in that view.
+    // ('mp', 'dmz' or 'wz') to get only the camos shown in that view.
     const getEntries = (mode, gunName, view) => {
         const entries = getGunCamos(mode, gunName).map((camo, i) => ({ camo, key: camo.id || String(i) }));
         if (mode === 'track' && view) return entries.filter(e => (e.camo.modes || trackViewKeys).includes(view));
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gun: null,
             dmzGun: null,
             dmzView: 'weapons',     // 'weapons' | 'blueprints' | 'notes'
-            trackMode: null,        // 'mp' | 'dmz': camo track view, shared by every gun
+            trackMode: null,        // 'mp' | 'dmz' | 'wz': camo track view, shared by every gun
             bpType: UPGRADE_TYPE,   // last type picked in the blueprint form
             bpFilter: 'all',        // 'all' | 'need' | 'obtained'
             openTypes: [0]
@@ -1228,8 +1228,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const allShared = isTrack && getGunCamos(mode, gunName).every(c => (c.modes || []).length > 1);
         if (isTrack) {
             header.appendChild(el('p', 'panel-hint', allShared
-                ? 'Every camo here is shared between MP and DMZ: check it in either view and it counts in both.'
-                : 'Camos marked "MP + DMZ" are shared: check them in either view and they count in both.'));
+                ? 'Every camo here is shared between Multiplayer, DMZ and Warzone: check it in any view and it counts in all of them.'
+                : 'Camos marked "SHARED" count in every mode: check them in any view.'));
         }
         // Weapon level + prestige: on the Camo Track and the Prestige tab
         const showsLevel = isTrack || mode === 'prestige';
@@ -1257,7 +1257,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const nameLine = el('div', 'camo-name-line');
             nameLine.appendChild(el('span', 'camo-name', camo.name));
             if (isTrack && !allShared && (camo.modes || []).length > 1) {
-                nameLine.appendChild(el('span', 'shared-tag', 'MP + DMZ'));
+                nameLine.appendChild(el('span', 'shared-tag', 'SHARED'));
             }
             info.appendChild(nameLine);
             const challenge = getChallenge(camo, view);
