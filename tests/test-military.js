@@ -14,14 +14,14 @@ const KEY = 'mw4-tracker-v1';
 // Kept here on purpose, separate from mw4-data.js, so a wrong edit to the data is caught.
 const EXPECTED = {
     'HAN 86': [10, 18, 25, 34, 42, 50, 57, 65],
-    'M4': [10, 18, 26, 35, 44, 51, 59, 64], // 5-8 from codcentral.net (owner's pick, 27 Nov 2026)
+    'M4': [10, 18, 26, 35, 44, 51, 59, 64], // checked in game (27 Nov 2026)
     'KASTOV 762': [10, 19, 27, 37, 45, 54, 61, 67],
     'AXION': [10, 19, 26, 34, 41, 48, 55, 62],
     'CRONEN SQUALL': [10, 17, 24, 31, 39, 45, 54, 60],
     'CRONEN OSPREY': [12, 19, 25, 33, 40, 48, 55, 63],
     'PATRIOT XMR': [11, 20, 28, 36, 43, 52, 59, 66],
     'ODEN': [12, 21, 25, 33, 39, 46, 53, 59],
-    'HYEON BURST': [10, 17, 26, 32, 40, 49, 55, 62],
+    'HYEON BURST': [10, 17, 26, 32, 40, 49, 55, 62], // checked in game (27 Nov 2026)
     'WZ.55 STRIGA': [12, 18, 23, 29, 36, 41, 47, 54],
     'X-58 NYX': [9, 15, 20, 25, 29, 35, 42, 47],
     'CSG-35': [11, 15, 19, 23, 27, 31, 35, 39],

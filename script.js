@@ -145,11 +145,36 @@ document.addEventListener('DOMContentLoaded', () => {
         .filter(([, v]) => v && typeof v === 'object')
         .map(([id, v]) => [id, { done: Boolean(v.done), progress: toCount(v.progress) }]));
 
+    // Weapon level + prestige per gun (the SET LEVEL menu): levels[gun] = { stage, level }
+    //   stage 0 = not prestiged (level 1-150), 1 = Prestige 1 (level restarted, 1-150),
+    //   2 = Prestige Master (level keeps counting, 1-250).
+    const PRESTIGE_STAGES = [
+        { label: 'NO', name: 'Not prestiged', levelLabel: 'Weapon level', max: 150,
+            help: 'Your current weapon level.' },
+        { label: 'PRESTIGE 1', name: 'Prestige 1', levelLabel: 'Level in Prestige 1', max: 150,
+            help: 'Prestiging restarts the weapon at level 1. Type the level it\'s on now.' },
+        { label: 'PRESTIGE MASTER', name: 'Prestige Master', levelLabel: 'Prestige Master level', max: 250,
+            help: 'Reaching max level again in Prestige 1 starts Prestige Master. Type the level shown (up to 250).' }
+    ];
+    const normLevelEntry = (v) => {
+        // A plain number is a level typed in before prestige was asked (not prestiged)
+        const raw = typeof v === 'number' || typeof v === 'string' ? { stage: 0, level: v } : v;
+        if (!raw || typeof raw !== 'object') return null;
+        const stage = [0, 1, 2].includes(Number(raw.stage)) ? Number(raw.stage) : 0;
+        const level = Math.floor(Number(raw.level));
+        if (!(level >= 1 && level <= PRESTIGE_STAGES[stage].max)) return null;
+        return { stage, level };
+    };
+    const normLevels = (m) => Object.fromEntries(Object.entries(m && typeof m === 'object' ? m : {})
+        .map(([gun, v]) => [gun, normLevelEntry(v)])
+        .filter(([, v]) => v));
+
     const defaultState = () => ({
         camos: {},   // camos[mode][gun] = { [camoKey]: true }
         mastery: {}, // mastery[camoId] = { done, progress }
         divergence: false, // Divergence is account-wide: one flag for every weapon
         camoOrder: CAMO_ORDER, // camo order the save uses (see the Type 73 migration below)
+        levels: {},  // levels[gun] = current weapon level (ticks Military camos up to it)
         dmz: {},     // dmz[gun] = { manuals: 0-3, blueprints: [{ name, claimed, rarity }] }
         gear: [],    // 3D Printer recipes: [{ category, name, rarity, obtained }]
         seededRecipes: [], // starter recipes already added once (so deleted ones stay deleted)
@@ -186,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // null = a save from when Divergence was ticked per weapon: converted below
                 divergence: typeof parsed.divergence === 'boolean' ? parsed.divergence : null,
                 camoOrder: Number(parsed.camoOrder) || 1, // saves from before 27 Nov 2026 have none
+                levels: normLevels(parsed.levels),
                 dmz: parsed.dmz || {},
                 gear: Array.isArray(parsed.gear) ? parsed.gear : [],
                 seededRecipes: Array.isArray(parsed.seededRecipes) ? parsed.seededRecipes : [],
@@ -458,6 +484,91 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
     };
 
+    // ---- Weapon level + prestige (SET LEVEL menu, Camo Track and Prestige tabs) ----
+    const getLevelEntry = (gunName) => state.levels[gunName] || null;
+    const isLevelCamo = (camo) => camo.section === 'MILITARY' || camo.section === 'SPECIAL';
+    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+    // Has the gun reached what this camo needs? (Military / Special: its level; Prestige: camo.req)
+    // A prestiged gun has passed every Military and Special level.
+    const isCamoReached = (gunName, camo) => {
+        const entry = getLevelEntry(gunName);
+        if (!entry) return false;
+        if (camo.req) {
+            if (entry.stage < camo.req.stage) return false;
+            return !camo.req.level || (entry.stage === 2 && entry.level >= camo.req.level);
+        }
+        if (!isLevelCamo(camo)) return false;
+        return entry.stage > 0 || (camo.level > 0 && entry.level >= camo.level);
+    };
+
+    // Line under a camo once a level is set: { open, text }, or null when there's nothing to say
+    const levelStatus = (gunName, camo) => {
+        const entry = getLevelEntry(gunName);
+        if (!entry || !(camo.req || isLevelCamo(camo))) return null;
+        if (isCamoReached(gunName, camo)) {
+            if (camo.req) return { open: true, text: '✓ REACHED' };
+            return { open: true, text: entry.stage > 0 ? '✓ OPEN · weapon prestiged' : '✓ OPEN · weapon level reached' };
+        }
+        if (camo.req) {
+            if (entry.stage === 0) return { open: false, text: camo.req.stage === 1 ? 'LOCKED · prestige this weapon at max level' : 'LOCKED · prestige, then reach max level again' };
+            if (entry.stage === 1) return { open: false, text: 'LOCKED · reach max level again in Prestige 1' };
+            return { open: false, text: `LOCKED · ${plural(camo.req.level - entry.level, 'Prestige Master level')} to go` };
+        }
+        if (!camo.level) return null; // level not confirmed yet
+        return { open: false, text: `LOCKED · ${plural(camo.level - entry.level, 'level')} to go` };
+    };
+
+    // Saves the level and prestige, then ticks every Military camo (Camo Track) and Prestige
+    // camo the gun has reached. Never unticks anything, and never ticks Special camos (they
+    // need their challenge too). Returns the names of the camos it ticked.
+    const setLevelEntry = (gunName, entry) => {
+        if (entry) state.levels[gunName] = entry;
+        else delete state.levels[gunName];
+        saveState();
+        if (!entry) return [];
+        const ticked = [];
+        const tick = (mode, { camo, key }) => {
+            if (isChecked(mode, gunName, key)) return;
+            setChecked(mode, gunName, key, true);
+            ticked.push(camo.name);
+        };
+        getEntries('track', gunName).forEach(e => { if (e.camo.section === 'MILITARY' && isCamoReached(gunName, e.camo)) tick('track', e); });
+        getEntries('prestige', gunName).forEach(e => { if (e.camo.req && isCamoReached(gunName, e.camo)) tick('prestige', e); });
+        return ticked;
+    };
+
+    // "LV 40 · Not prestiged" / "Prestige 1 · LV 12" / "Prestige Master · LV 160"
+    const levelSummary = (entry) => (entry.stage === 0
+        ? `LV ${entry.level} · Not prestiged`
+        : `${PRESTIGE_STAGES[entry.stage].name} · LV ${entry.level}`);
+    // Weapon list badge: "LV 40" / "P1 · LV 12" / "PM 160"
+    const levelBadge = (entry) => (entry.stage === 0 ? `LV ${entry.level}` : entry.stage === 1 ? `P1 · LV ${entry.level}` : `PM ${entry.level}`);
+
+    // "Next: MILITARY 6 at level 44 (4 levels away)"
+    const weaponLevelHint = (gunName) => {
+        const entry = getLevelEntry(gunName);
+        if (!entry) return "Click SET LEVEL: Military and Prestige camos you've reached tick themselves.";
+        const prestige = getEntries('prestige', gunName).filter(e => e.camo.req);
+        const nextPrestige = prestige.find(e => !isCamoReached(gunName, e.camo));
+        if (entry.stage === 0) {
+            const gated = getEntries('track', gunName).filter(e => isLevelCamo(e.camo) && e.camo.level > entry.level)
+                .sort((a, b) => a.camo.level - b.camo.level);
+            if (gated.length) {
+                const next = gated[0].camo;
+                return `Next: ${next.name} at level ${next.level} (${plural(next.level - entry.level, 'level')} away)`;
+            }
+            if (!getEntries('track', gunName).some(e => isLevelCamo(e.camo) && e.camo.level)) {
+                return "Military unlock levels for this weapon aren't published yet. Prestiging completes every Military camo.";
+            }
+            return `Every Military and Special camo is open. Next: ${nextPrestige.camo.name}, prestige this weapon at max level.`;
+        }
+        if (!nextPrestige) return 'Every Military and Prestige camo is unlocked.';
+        if (entry.stage === 1) return `Next: ${nextPrestige.camo.name}, reach max level again in Prestige 1.`;
+        const lv = nextPrestige.camo.req.level;
+        return `Next: ${nextPrestige.camo.name} at Prestige Master level ${lv} (${plural(lv - entry.level, 'level')} away)`;
+    };
+
     const countDone = (mode, gunName, entries) => entries.reduce((acc, e) => acc + (isChecked(mode, gunName, e.key) ? 1 : 0), 0);
 
     const getDoneCount = (mode, gunName) => countDone(mode, gunName, getEntries(mode, gunName));
@@ -653,6 +764,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const done = getDoneCount(mode, gunName);
         bar.style.width = total ? `${(done / total) * 100}%` : '0%';
         count.textContent = `${done}/${total}`;
+        const levelEntry = getLevelEntry(gunName);
+        if ((state.ui.mode === 'track' || state.ui.mode === 'prestige') && levelEntry) {
+            badge.textContent = levelBadge(levelEntry);
+            badge.title = `Weapon level: ${levelSummary(levelEntry)}`;
+            badge.hidden = false;
+        }
 
         const { tier } = getGunTier(mode, gunName);
         if (tier) li.classList.add('tiered', `tier-${tier}`);
@@ -929,6 +1046,145 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     };
 
+    // "MILITARY 1–8 · PYROCLAST" for the ticked message
+    const describeTicked = (names) => {
+        const mil = names.filter(n => n.startsWith('MILITARY ')).map(n => n.replace('MILITARY ', ''));
+        const others = names.filter(n => !n.startsWith('MILITARY '));
+        const parts = [];
+        if (mil.length === 8) parts.push('MILITARY 1–8');
+        else if (mil.length) parts.push(`MILITARY ${mil.join(', ')}`);
+        return [...parts, ...others].join(' · ');
+    };
+
+    // Applies a level change, redraws the page and says what was ticked.
+    const applyLevelEntry = (gunName, entry) => {
+        const ticked = setLevelEntry(gunName, entry);
+        const scrollBefore = rightPanel.scrollTop;
+        renderCamoPanel(gunName);
+        rightPanel.scrollTop = scrollBefore;
+        updateGunAndType(gunName);
+        if (ticked.length) {
+            showToast({
+                label: `✓ ${ticked.length} CAMO${ticked.length === 1 ? '' : 'S'} TICKED`,
+                name: describeTicked(ticked),
+                detail: `${gunName} · ${levelSummary(entry)}`
+            });
+        }
+        const btn = rightPanel.querySelector('.weapon-level-btn');
+        if (btn) btn.focus();
+    };
+
+    // The SET LEVEL menu: asks whether the gun is prestiged, then its level.
+    const openLevelMenu = (gunName) => {
+        const current = getLevelEntry(gunName);
+        let stage = current ? current.stage : 0;
+
+        const dialog = el('dialog', 'level-menu');
+        dialog.setAttribute('aria-label', `${gunName} weapon level`);
+        const form = el('form', 'level-menu-form');
+        form.noValidate = true;
+        form.appendChild(el('h3', 'level-menu-title', gunName));
+        form.appendChild(el('p', 'level-menu-sub', "Camos you've reached get ticked for you. Nothing is ever unticked."));
+
+        form.appendChild(el('p', 'level-menu-q', 'Have you prestiged this gun?'));
+        const stageHolder = el('div', 'level-menu-stages');
+        form.appendChild(stageHolder);
+
+        const field = el('label', 'level-menu-field');
+        const fieldName = el('span', 'level-menu-label');
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '1';
+        input.inputMode = 'numeric';
+        input.className = 'level-menu-input';
+        input.value = current ? current.level : '';
+        field.appendChild(fieldName);
+        field.appendChild(input);
+        form.appendChild(field);
+        const help = el('p', 'level-menu-help');
+        form.appendChild(help);
+        const error = el('p', 'level-menu-error');
+        error.setAttribute('role', 'alert');
+        error.hidden = true;
+        form.appendChild(error);
+
+        const showStage = () => {
+            stageHolder.innerHTML = '';
+            stageHolder.appendChild(buildSegmented(PRESTIGE_STAGES.map((s, i) => [i, s.label]), stage, (picked) => {
+                stage = picked;
+                showStage();
+                input.focus();
+            }, 'level-stage-toggle'));
+            const s = PRESTIGE_STAGES[stage];
+            fieldName.textContent = s.levelLabel;
+            input.max = String(s.max);
+            input.placeholder = `1–${s.max}`;
+            help.textContent = stage === 1 || stage === 2
+                ? `${s.help} Every Military camo counts as done once a gun is prestiged.`
+                : s.help;
+            error.hidden = true;
+        };
+        showStage();
+
+        const actions = el('div', 'level-menu-actions');
+        if (current) {
+            const clear = el('button', 'ghost-button level-menu-clear', 'CLEAR');
+            clear.type = 'button';
+            clear.title = 'Forget this level (your ticks stay)';
+            clear.addEventListener('click', () => {
+                dialog.close();
+                applyLevelEntry(gunName, null);
+            });
+            actions.appendChild(clear);
+        }
+        const cancel = el('button', 'ghost-button level-menu-cancel', 'CANCEL');
+        cancel.type = 'button';
+        cancel.addEventListener('click', () => dialog.close());
+        const save = el('button', 'level-menu-save', 'SAVE');
+        save.type = 'submit';
+        actions.appendChild(cancel);
+        actions.appendChild(save);
+        form.appendChild(actions);
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const max = PRESTIGE_STAGES[stage].max;
+            const level = Math.floor(Number(input.value));
+            if (!input.value.trim() || !(level >= 1 && level <= max)) {
+                error.textContent = `Enter a level from 1 to ${max}.`;
+                error.hidden = false;
+                input.focus();
+                return;
+            }
+            dialog.close();
+            applyLevelEntry(gunName, { stage, level });
+        });
+
+        dialog.appendChild(form);
+        dialog.addEventListener('close', () => dialog.remove());
+        document.body.appendChild(dialog);
+        dialog.showModal();
+        input.focus();
+        input.select();
+    };
+
+    // WEAPON LEVEL card at the top of the Camo Track and Prestige tabs
+    const buildWeaponLevelCard = (gunName) => {
+        const entry = getLevelEntry(gunName);
+        const box = el('div', 'weapon-level');
+        const top = el('div', 'weapon-level-top');
+        top.appendChild(el('span', 'weapon-level-title', 'WEAPON LEVEL'));
+        top.appendChild(el('span', `weapon-level-value${entry ? '' : ' unset'}`, entry ? levelSummary(entry) : 'Not set'));
+        const btn = el('button', 'weapon-level-btn', 'SET LEVEL');
+        btn.type = 'button';
+        btn.setAttribute('aria-haspopup', 'dialog');
+        btn.addEventListener('click', () => openLevelMenu(gunName));
+        top.appendChild(btn);
+        box.appendChild(top);
+        box.appendChild(el('p', 'weapon-level-hint', weaponLevelHint(gunName)));
+        return box;
+    };
+
     const renderCamoPanel = (gunName) => {
         rightPanel.innerHTML = '';
         const mode = state.ui.mode;
@@ -975,6 +1231,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? 'Every camo here is shared between MP and DMZ: check it in either view and it counts in both.'
                 : 'Camos marked "MP + DMZ" are shared: check them in either view and they count in both.'));
         }
+        // Weapon level + prestige: on the Camo Track and the Prestige tab
+        const showsLevel = isTrack || mode === 'prestige';
+        if (showsLevel) header.appendChild(buildWeaponLevelCard(gunName));
         rightPanel.appendChild(header);
 
         const listEl = el('div', 'camo-list');
@@ -1004,6 +1263,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const challenge = getChallenge(camo, view);
             if (challenge) info.appendChild(el('p', 'camo-challenge', challenge));
             if (camo.unlock) info.appendChild(el('p', 'camo-unlock', camo.unlock));
+
+            // Military / Special / Prestige: open, or what's still needed (once a level is set)
+            const levelState = showsLevel ? levelStatus(gunName, camo) : null;
+            if (levelState) {
+                const levelLine = el('p', `camo-lock level-lock${levelState.open ? ' open' : ''}`, levelState.text);
+                info.appendChild(levelLine);
+                lockUpdaters.push(() => { levelLine.hidden = checkbox.checked; }); // done: nothing to say
+            }
 
             // Live lock status (Camo Track completionist camos only)
             if (isTrack && camo.gate) {

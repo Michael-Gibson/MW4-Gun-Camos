@@ -86,11 +86,11 @@ const ch = (mp, dmz) => ({ mp: `Get ${mp}`, dmz: `Get ${dmz}` });
 // upblazed.com, gamerant, mw4camo.com (ARs, patch 1.005.001), bosslobbies.com. Most guns:
 // 4-6 sites agree.
 // M4 Military 5-8 changed 27 Nov 2026 from 39/44/51/59 (the sites) to 44/51/59/64
-// (codcentral.net in-game screenshots, countdown + 1), at the owner's request; not checked in game yet.
+// (codcentral.net in-game screenshots, countdown + 1); the owner confirmed all 8 in game (27 Nov 2026).
 // Checked in game by the owner (27 Nov 2026): M4 Military 1 = 10 (matches the sites);
 // CSG-35 all 8 = 11/15/19/23/27/31/35/39; Cronen Osprey all 8 = 12/19/25/33/40/48/55/63. Every site
 // had both Season 1 guns wrong. (An earlier reading of CSG-35 Military 8 = 62 was replaced by 39.)
-// Lower confidence: HYEON BURST Military 8 (62 on 5 sites, 63 on 2).
+// HYEON BURST: all 8 confirmed in game by the owner (Military 8 = 62; 2 sites said 63).
 //
 // GAME ONLY SHOWS A COUNTDOWN? ("Earn 22 more weapon unlocks using the ...")
 // That number counts from the gun's CURRENT weapon level, so:
@@ -105,14 +105,14 @@ const fromRemaining = (currentLevel, remaining) =>
 const militaryLevels = {
     // ASSAULT RIFLES
     "HAN 86":               [10, 18, 25, 34, 42, 50, 57, 65],
-    "M4":                   [10, 18, 26, 35, 44, 51, 59, 64],   // 5-8 from codcentral.net screenshots (owner's pick); check in game
+    "M4":                   [10, 18, 26, 35, 44, 51, 59, 64],   // all 8 checked in game
     "KASTOV 762":           [10, 19, 27, 37, 45, 54, 61, 67],
     "AXION":                [10, 19, 26, 34, 41, 48, 55, 62],
     "CRONEN SQUALL":        [10, 17, 24, 31, 39, 45, 54, 60],
     "CRONEN OSPREY":        [12, 19, 25, 33, 40, 48, 55, 63],   // Season 1; all 8 checked in game
     "PATRIOT XMR":          [11, 20, 28, 36, 43, 52, 59, 66],
     "ODEN":                 [12, 21, 25, 33, 39, 46, 53, 59],
-    "HYEON BURST":          [10, 17, 26, 32, 40, 49, 55, 62],   // Military 8: 62 or 63
+    "HYEON BURST":          [10, 17, 26, 32, 40, 49, 55, 62],   // all 8 checked in game
     // SMGS
     "WZ.55 STRIGA":         [12, 18, 23, 29, 36, 41, 47, 54],
     "X-58 NYX":             [9, 15, 20, 25, 29, 35, 42, 47],
@@ -159,6 +159,7 @@ const buildMilitary = (gun) => Array.from({ length: 8 }, (_, i) => {
         name: `MILITARY ${i + 1}`,
         modes: ["mp", "dmz"],
         challenge: { mp: text, dmz: text },
+        level: level || 0, // weapon level that unlocks it (0 = unknown); used by the weapon level box
         section: "MILITARY"
     };
 });
@@ -174,9 +175,9 @@ const buildMilitary = (gun) => Array.from({ length: 8 }, (_, i) => {
 //   (its "Earn N more weapon unlocks" countdowns were taken at level 1, so level = N + 1)
 //   and upblazed.com.
 //   Checked in game by the owner (27 Nov 2026): CRONEN OSPREY, CSG-35, KASTOV 762,
-//   AXION, MOSIN-NAGANT. The sheet had Mosin sp1 as 25 (it's 24), so sheet-only values
-//   can be off by one.
-//   Sheet only, not cross-checked (verify in game if you can): ODEN, APOC-338, ORIS 8.6,
+//   AXION, MOSIN-NAGANT, APOC-338, ORIS 8.6. The sheet was 1 too high on Mosin sp1 and on all
+//   three APOC-338 and Oris 8.6 Specials, so sheet-only values can be off by one.
+//   Sheet only, not cross-checked (verify in game if you can): ODEN,
 //   MOJAVE .357, the launchers, FSS CARBON EDGE 1095, and sp2/sp3 of
 //   WZ.55 STRIGA, ISO NIGHTSHADE, KRAIT P68, MAR-9 sp3, FINN LMG sp3, .50 GS sp3.
 //   JAK 12 and ZLR TALONHAWK: unreleased, so not published yet.
@@ -205,10 +206,10 @@ const specialLevels = {
     // LMGS
     "FINN LMG":             [18, 39, 60],
     "TYPE 73":              [23, 45, 65],
-    "APOC-338":             [15, 36, 56],
+    "APOC-338":             [14, 35, 55],   // checked in game (the sheet said 15/36/56)
     // MARKSMAN RIFLES
     "MAR-9":                [26, 49, 73],
-    "ORIS 8.6":             [27, 49, 70],
+    "ORIS 8.6":             [26, 48, 69],   // checked in game (the sheet said 27/49/70)
     "MOSIN-NAGANT":         [24, 46, 68],   // checked in game (the sheet said 25 for sp1)
     // SNIPER RIFLES
     "SIGNAL 50":            [28, 52, 74],
@@ -432,6 +433,7 @@ const buildSpecial = (gun) => Array.from({ length: 3 }, (_, i) => {
         challenge: challenge || { mp: "", dmz: "" },
         unlock: !name ? "Not published yet for this weapon"
             : level ? `Opens at weapon level ${level}` : "Unlock level not confirmed yet",
+        level: (name && level) || 0, // weapon level that opens it (0 = unknown)
         section: "SPECIAL"
     };
 });
@@ -609,12 +611,20 @@ const masteryModes = [
 // =========================
 // PRESTIGE CAMOS (per weapon)
 // =========================
+// WEAPON PRESTIGE (official progression blog, 19 Oct 2026; ~8 guides agree):
+//   - Each gun can be prestiged ONCE, after reaching its max level. Its level restarts at 1.
+//   - Reaching max level again in Prestige 1 moves the gun into Prestige Master
+//     automatically. The level carries on counting from there (up to 250).
+//   - A prestiged gun has passed every Military level, so all Military camos are done.
+// `req` is what the WEAPON LEVEL menu checks: stage 1 = Prestige 1, stage 2 = Prestige Master,
+// plus an optional Prestige Master level. Positions are the saved keys: don't reorder.
+// Scatter: 150 (official blog, codcentral in-game text, 7 guides); codmunity's 160 is wrong.
 const modeCamos = {
     prestige: [
-        { name: "PYROCLAST", challenge: "", tier: "p1" },
-        { name: "PYROCLAST TERMINUS", challenge: "", tier: "p2" },
-        { name: "PYROCLAST SCATTER", challenge: "", tier: "p3" },
-        { name: "PYROCLAST CASCADE", challenge: "", tier: "p4" }
+        { name: "PYROCLAST", challenge: "Reach Weapon Prestige 1", req: { stage: 1 }, tier: "p1" },
+        { name: "PYROCLAST TERMINUS", challenge: "Reach Weapon Prestige 1 Max Level (this moves the gun into Prestige Master)", req: { stage: 2 }, tier: "p2" },
+        { name: "PYROCLAST SCATTER", challenge: "Reach Weapon Prestige Master Level 150", req: { stage: 2, level: 150 }, tier: "p3" },
+        { name: "PYROCLAST CASCADE", challenge: "Reach Weapon Prestige Master Level 250", req: { stage: 2, level: 250 }, tier: "p4" }
     ]
 };
 
