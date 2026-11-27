@@ -185,7 +185,7 @@ const specialCamos = {
     "CRONEN SQUALL": [
         ["ONI", ch("20 point blank kills", "75 point blank kills")],
         ["URBAN SMOKE", ch("20 mounted kills", "75 mounted kills")],
-        ["OPTICAL REVERB", ch("3 kills without dying 15 times", "Get 3 enemy kills without taking damage 50 times")]
+        ["OPTICAL REVERB", ch("3 kills without dying 15 times", "3 enemy kills without taking damage 50 times")]
     ],
     // Season 1 DLC weapon (Battle Pass, free tier). Source: bosslobbies.gg + codcentral.net (Nov 2026).
     "CRONEN OSPREY": [
