@@ -678,6 +678,40 @@ button { font-family: inherit; }
 
 .camo-unlock::before { content: "\1F512  "; font-size: 0.65rem; }
 
+/* Live lock status for Gold / Platinum / Harmonic Break / Divergence */
+.camo-lock {
+    display: inline-block;
+    margin: 5px 0 0;
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    background: rgba(240, 164, 58, 0.08);
+    border: 1px solid rgba(240, 164, 58, 0.35);
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+}
+
+.camo-lock.open {
+    color: var(--accent);
+    background: rgba(143, 220, 90, 0.08);
+    border-color: var(--accent-dim);
+}
+
+.camo-lock-detail,
+.camo-lock-note {
+    margin: 3px 0 0;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    overflow-wrap: anywhere;
+}
+
+.camo-lock-note { color: var(--text-faint); font-style: italic; }
+
+/* Divergence earned automatically: the box is locked on */
+.camo-row.auto input[type="checkbox"] { cursor: not-allowed; opacity: 0.8; }
+
 /* Progress footer */
 .progress-footer { margin-top: 18px; }
 

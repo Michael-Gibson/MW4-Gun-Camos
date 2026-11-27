@@ -147,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const defaultState = () => ({
         camos: {},   // camos[mode][gun] = { [camoKey]: true }
         mastery: {}, // mastery[camoId] = { done, progress }
+        divergence: false, // Divergence is account-wide: one flag for every weapon
         dmz: {},     // dmz[gun] = { manuals: 0-3, blueprints: [{ name, claimed, rarity }] }
         gear: [],    // 3D Printer recipes: [{ category, name, rarity, obtained }]
         seededRecipes: [], // starter recipes already added once (so deleted ones stay deleted)
@@ -180,6 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 camos: parsed.camos || {},
                 // null = a save from before the MASTERY tab: converted from per-weapon checks below
                 mastery: parsed.mastery && typeof parsed.mastery === 'object' ? normMastery(parsed.mastery) : null,
+                // null = a save from when Divergence was ticked per weapon: converted below
+                divergence: typeof parsed.divergence === 'boolean' ? parsed.divergence : null,
                 dmz: parsed.dmz || {},
                 gear: Array.isArray(parsed.gear) ? parsed.gear : [],
                 seededRecipes: Array.isArray(parsed.seededRecipes) ? parsed.seededRecipes : [],
@@ -380,6 +383,13 @@ document.addEventListener('DOMContentLoaded', () => {
         state.ui.mode = MASTERY_MODE;
         migrated = true;
     }
+    // Divergence used to be a per-weapon checkbox. It's one account-wide camo in game, so a
+    // Divergence ticked on ANY weapon counts for all of them. (Old per-weapon ticks stay in
+    // the save, unused.)
+    if (typeof state.divergence !== 'boolean') {
+        state.divergence = Object.values(state.camos.track || {}).some(gun => Boolean(gun && gun.divergence));
+        migrated = true;
+    }
 
     // Validate restored UI state against current data
     const validModes = [...modeOrder, MASTERY_MODE, LOADOUT_MODE, CHALLENGE_MODE];
@@ -404,9 +414,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================
     // CAMO HELPERS
     // =========================
-    const isChecked = (mode, gunName, key) => Boolean(state.camos?.[mode]?.[gunName]?.[key]);
+    // How many weapons have a Camo Track camo ticked (e.g. 'platinum', 'harmonic').
+    // Counts every weapon listed, Season 1 guns included.
+    const countTrackChecked = (key) => allGuns.filter(g => Boolean(state.camos?.track?.[g]?.[key])).length;
+
+    // Divergence is account-wide: done if you ticked it, or once 33 Harmonic Breaks are ticked.
+    const isDivergenceEarned = () => countTrackChecked('harmonic') >= masteryGate.harmonicNeeded;
+    const isDivergenceDone = () => Boolean(state.divergence) || isDivergenceEarned();
+
+    const isChecked = (mode, gunName, key) => {
+        if (mode === 'track' && key === 'divergence') return isDivergenceDone();
+        return Boolean(state.camos?.[mode]?.[gunName]?.[key]);
+    };
 
     const setChecked = (mode, gunName, key, value) => {
+        if (mode === 'track' && key === 'divergence') {
+            state.divergence = Boolean(value);
+            saveState();
+            return;
+        }
         if (!state.camos[mode]) state.camos[mode] = {};
         if (!state.camos[mode][gunName]) state.camos[mode][gunName] = {};
         if (value) state.camos[mode][gunName][key] = true;
@@ -835,6 +861,56 @@ document.addEventListener('DOMContentLoaded', () => {
         return wrap;
     };
 
+    // ----- Live "LOCKED / OPEN" status for the Completionist camos -----
+    // Pure information from the boxes already ticked; it never stops you ticking a camo.
+    const gunTypeOf = Object.fromEntries(gunTypeArray.flatMap(t => (weaponsByType[t] || []).map(g => [g, t])));
+    const listGuns = (guns, max = 5) => guns.length > max
+        ? `${guns.slice(0, max).join(', ')} +${guns.length - max} more`
+        : guns.join(', ');
+
+    // -> { open, text, detail?, note? } or null for camos without a gate
+    const getLockStatus = (gunName, camo) => {
+        const gate = camo.gate;
+        if (!gate) return null;
+        const tag = (open) => (open ? '✓ OPEN' : 'LOCKED');
+        if (gate.kind === 'weapon') {
+            const before = getEntries('track', gunName).filter(e => e.camo.section === 'MILITARY' || e.camo.section === 'SPECIAL');
+            const done = before.filter(e => isChecked('track', gunName, e.key)).length;
+            const open = done === before.length;
+            return { open, text: `${tag(open)} · ${done}/${before.length} Military + Special done` };
+        }
+        if (gate.kind === 'classGold') {
+            const guns = weaponsByType[gunTypeOf[gunName]] || [];
+            const golds = guns.filter(g => isChecked('track', g, 'gold')).length;
+            const open = golds >= gate.need;
+            const status = { open, text: `${tag(open)} · ${Math.min(golds, gate.need)}/${gate.need} ${gate.label} Golds` };
+            if (!open) {
+                const missing = guns.filter(g => !isChecked('track', g, 'gold'));
+                status.detail = `Need ${gate.need - golds} more · no Gold yet: ${listGuns(missing)}`;
+            }
+            return status;
+        }
+        if (gate.kind === 'platinumTotal') {
+            const n = countTrackChecked('platinum');
+            const open = n >= gate.need;
+            return {
+                open,
+                text: `${tag(open)} · ${Math.min(n, gate.need)}/${gate.need} Platinum camos (any weapon)`,
+                note: 'Counts every weapon here, Season 1 guns included (not officially confirmed).'
+            };
+        }
+        if (gate.kind === 'harmonicTotal') {
+            const n = countTrackChecked('harmonic');
+            const earned = n >= gate.need;
+            const open = earned || Boolean(state.divergence);
+            let text = `LOCKED · ${n}/${gate.need} Harmonic Breaks (account-wide)`;
+            if (earned) text = `✓ EARNED · ${n}/${gate.need} Harmonic Breaks`;
+            else if (open) text = `✓ TICKED (account-wide) · ${n}/${gate.need} Harmonic Breaks`;
+            return { open, text, note: 'Counts every weapon here, Season 1 guns included (not officially confirmed).' };
+        }
+        return null;
+    };
+
     const renderCamoPanel = (gunName) => {
         rightPanel.innerHTML = '';
         const mode = state.ui.mode;
@@ -885,6 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const listEl = el('div', 'camo-list');
         let lastSection = null;
+        const lockUpdaters = []; // refresh every lock line after any tick on this page
 
         entries.forEach(({ camo, key }) => {
             if (camo.section && camo.section !== lastSection) {
@@ -910,10 +987,39 @@ document.addEventListener('DOMContentLoaded', () => {
             if (challenge) info.appendChild(el('p', 'camo-challenge', challenge));
             if (camo.unlock) info.appendChild(el('p', 'camo-unlock', camo.unlock));
 
+            // Live lock status (Camo Track completionist camos only)
+            if (isTrack && camo.gate) {
+                const lockLine = el('p', 'camo-lock');
+                const lockDetail = el('p', 'camo-lock-detail');
+                info.appendChild(lockLine);
+                info.appendChild(lockDetail);
+                const status0 = getLockStatus(gunName, camo);
+                if (status0 && status0.note) info.appendChild(el('p', 'camo-lock-note', status0.note));
+                lockUpdaters.push(() => {
+                    const status = getLockStatus(gunName, camo);
+                    if (!status) return;
+                    lockLine.textContent = status.text;
+                    lockLine.classList.toggle('open', status.open);
+                    lockDetail.textContent = status.detail || '';
+                    lockDetail.hidden = !status.detail;
+                    if (camo.account) {
+                        // Divergence: earned automatically at 33 Harmonic Breaks (box locked on)
+                        checkbox.checked = isChecked(mode, gunName, key);
+                        checkbox.disabled = isDivergenceEarned();
+                        checkbox.title = checkbox.disabled ? `Earned automatically: ${masteryGate.harmonicNeeded} Harmonic Breaks are ticked` : '';
+                        row.classList.toggle('done', checkbox.checked);
+                        row.classList.toggle('auto', checkbox.disabled);
+                    }
+                });
+            }
+
             checkbox.addEventListener('change', () => {
                 setChecked(mode, gunName, key, checkbox.checked);
                 row.classList.toggle('done', checkbox.checked);
-                updateGunAndType(gunName);
+                // Harmonic Break and Divergence are account-wide: recolour every weapon
+                if (isTrack && (key === 'harmonic' || camo.account)) updateAllColors();
+                else updateGunAndType(gunName);
+                lockUpdaters.forEach(update => update());
                 updateProgress();
             });
 
@@ -922,6 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.appendChild(info);
             listEl.appendChild(row);
         });
+        lockUpdaters.forEach(update => update());
 
         rightPanel.appendChild(listEl);
 
@@ -2523,7 +2630,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
     };
     // Divergence needs 33 Harmonic Breaks: count the ones checked on the Camo Track
-    const harmonicCount = () => allGuns.filter(g => isChecked('track', g, 'harmonic')).length;
+    const harmonicCount = () => countTrackChecked('harmonic');
     const fmtNum = (n) => Number(n).toLocaleString('en-US');
 
     const renderMasteryPanel = () => {
@@ -2545,13 +2652,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // ----- Divergence: opens the first camo in every mode -----
         const hb = harmonicCount();
         const need = masteryGate.harmonicNeeded;
-        const gateReady = hb >= need;
+        // Same rule as the Camo Track: earned at 33 Harmonic Breaks, or ticked yourself
+        const gateReady = isDivergenceDone();
         const gate = el('div', `mastery-gate${gateReady ? ' ready' : ''}`);
         const gateTop = el('div', 'mastery-gate-top');
         gateTop.appendChild(el('span', 'mastery-gate-name', masteryGate.name));
-        gateTop.appendChild(el('span', 'mastery-gate-count', gateReady
-            ? `✓ ${hb} HARMONIC BREAKS`
-            : `${hb} / ${need} HARMONIC BREAKS`));
+        let gateCount = `${hb} / ${need} HARMONIC BREAKS`;
+        if (hb >= need) gateCount = `✓ ${hb} HARMONIC BREAKS`;
+        else if (gateReady) gateCount = `✓ TICKED · ${hb} / ${need} HARMONIC BREAKS`;
+        gateTop.appendChild(el('span', 'mastery-gate-count', gateCount));
         gate.appendChild(gateTop);
         if (masteryGate.text) gate.appendChild(el('p', 'mastery-gate-text', masteryGate.text));
         const gateBar = el('div', 'mat-progress');

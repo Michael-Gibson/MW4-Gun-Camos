@@ -9,6 +9,7 @@ const path = require('path');
 
 const suites = [
     ['test-weapons.js', 'DMZ weapon cards + Season 1 camos'],
+    ['test-camo-locks.js', 'Camo Track lock status + account-wide Divergence'],
     ['test-notes.js', 'Notes & Materials: layout, shopping list, messages, sorting'],
     ['test-upgrades.js', '3D Printer upgrades + costs'],
     ['test-mastery.js', 'Mastery tab'],

@@ -23,7 +23,7 @@ python -m http.server
 
 | Tab | What it tracks |
 | --- | --- |
-| **Camo Track** | The full per-weapon track: 8 Military camos, 3 weapon-specific Special camos, then Gold → Platinum → Harmonic Break → Divergence. A **Multiplayer / DMZ** toggle switches the challenge text for each view. Camos earnable in both modes are shared, so checking one in either view marks it done in both. |
+| **Camo Track** | The full per-weapon track: 8 Military camos, 3 weapon-specific Special camos, then Gold → Platinum → Harmonic Break → Divergence. A **Multiplayer / DMZ** toggle switches the challenge text for each view. Camos earnable in both modes are shared, so checking one in either view marks it done in both. Gold, Platinum, Harmonic Break and Divergence each show a live **LOCKED / ✓ OPEN** line built from what you've ticked, for example "LOCKED · 6/8 Assault Rifle Golds" plus the weapons that still need Gold, or "12/33 Platinum camos (any weapon)". **Divergence is account-wide:** tick it on any weapon and it's done on all, and it's earned automatically at 33 Harmonic Breaks. |
 | **Prestige** | Weapon Prestige camos (the Pyroclast set), per weapon. |
 | **Mastery** | The account-wide Mastery camos, with **Multiplayer**, **DMZ** and **Warzone** side by side. Each camo shows its challenge, the camo it needs first, and a progress counter (e.g. 112 / 300) that ticks the camo done when you reach the target. A **Divergence** box at the top counts your Harmonic Breaks toward the 33 that open Mastery. |
 
@@ -56,6 +56,7 @@ Overall completion for the Camo Track, Prestige and Mastery, plus DMZ manual and
 
 The `tests/` folder has browser tests that drive the real app in headless Microsoft Edge, which is installed on Windows by default. They cover:
 - DMZ weapon cards and the Season 1 camos;
+- Camo Track lock status and account-wide Divergence;
 - Notes & Materials (layout, shopping list, messages, sorting);
 - 3D Printer upgrades and costs;
 - the Mastery tab;
@@ -94,7 +95,12 @@ Tier and rarity colors are defined in [`styles.css`](styles.css) under **TIER CO
 
 ### Data accuracy
 
-Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Season 1 weapons (Cronen Osprey, CSG-35) come from community guides published after they released. Some weapons don't have published Military unlock levels yet, and the JAK 12 and ZLR Talonhawk Special camos haven't been revealed (both are upcoming in-season event rewards). 3D Printer upgrade costs come from community sites (Nov 2026); several later tiers are community-reported or have no confirmed cash cost, and those show a ⚠ note or "$ ?" in the app. MIA Recovery IV still has no confirmed cash cost. Check entries against the game and update `mw4-data.js` as needed.
+Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Season 1 weapons (Cronen Osprey, CSG-35) come from community guides published after they released. Some weapons don't have published Military unlock levels yet, and the JAK 12 and ZLR Talonhawk Special camos haven't been revealed (both are upcoming in-season event rewards). 3D Printer upgrade costs come from community sites (Nov 2026); several later tiers are community-reported or have no confirmed cash cost, and those show a ⚠ note or "$ ?" in the app. MIA Recovery IV still has no confirmed cash cost. Unlock rules for the Completionist camos follow the in-game wording (Nov 2026):
+- **Platinum** needs a fixed number of Golds per class, set at launch (AR 8, SMG 5, Shotgun 2, LMG 3, Marksman 3, Sniper 3, Pistol 4, Launcher 4, Melee 1). Season 1 guns can count toward it but didn't raise it.
+- **Harmonic Break** needs 33 Platinum camos on any weapons.
+- **Divergence** is one account-wide camo, earned after 33 Harmonic Breaks.
+
+Whether Season 1 guns count toward the 33s isn't officially confirmed (guides say they can stand in). The tracker counts every weapon it lists. Check entries against the game and update `mw4-data.js` as needed.
 
 ## Project structure
 
@@ -117,6 +123,19 @@ Newest first. Your saved progress carries over through every change listed here.
 
 ### 2026-11-27
 
+- **"Why is this locked?" on the Camo Track:** Gold, Platinum, Harmonic Break and Divergence each show a live **LOCKED / ✓ OPEN** line under the challenge, which updates as you tick boxes. It's information only and never stops you ticking a camo.
+  - **Gold:** "LOCKED · 6/11 Military + Special done".
+  - **Platinum:** "LOCKED · 6/8 Assault Rifle Golds", with how many more are needed and which weapons in the class have no Gold yet.
+  - **Harmonic Break:** "12/33 Platinum camos (any weapon)".
+  - **Divergence:** "x/33 Harmonic Breaks".
+- **Unlock rules fixed:**
+  - **Platinum:** now "Opens after N Gold camos on <class> weapons", using the launch counts (AR 8, SMG 5, Shotgun 2, LMG 3, Marksman 3, Sniper 3, Pistol 4, Launcher 4, Melee 1). It used to say "Gold on every weapon", which was wrong once Season 1 added a 9th AR.
+  - **Harmonic Break:** now "Opens after 33 Platinum camos on any weapons (account-wide)". It used to say "Opens after Platinum".
+- **Divergence is account-wide:** it's earned once for your account after 33 Harmonic Breaks and unlocks on every weapon.
+  - Ticking it on any weapon ticks it on all of them, and it's ticked automatically (box locked on) once 33 Harmonic Breaks are ticked.
+  - The Mastery tab's Divergence box follows the same rule.
+  - Older saves convert: a Divergence ticked on any weapon counts for all.
+- New test suite `tests/test-camo-locks.js` (47 checks). There are now six suites with 321 checks.
 - **One account-wide Mastery tab:** the MP Mastery, DMZ Mastery and Warzone Mastery tabs (which tracked per weapon) are replaced by a single **Mastery** tab, because in game Mastery counts any weapon and unlocks on every weapon at once. It shows Multiplayer, DMZ and Warzone side by side, each camo in unlock order with its challenge and what it needs first:
   - Multiplayer: Mercurial Drift (10 kills in a match ×250), Polyatomic Reforged (3 kills without taking damage ×300), Orion Reforged (5 kills without dying ×500).
   - DMZ: Chiral (2,500 Tier 3+ enemy kills), Ripple Tide (extract 2 Lieutenant dog tags in one deployment ×50), Helio (25,000 kills with Legendary weapons on a max-level Operator).

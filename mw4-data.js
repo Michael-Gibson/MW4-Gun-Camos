@@ -361,7 +361,21 @@ const buildSpecial = (gun) => Array.from({ length: 3 }, (_, i) => {
 
 // ---- COMPLETIONIST (Gold -> Platinum -> Harmonic Break -> Divergence) ----
 // Gold is the same for every gun (launchers need fewer in DMZ).
-// Platinum and Harmonic Break depend on the weapon class.
+// Platinum and Harmonic Break challenges depend on the weapon class.
+//
+// UNLOCK RULES (in-game wording via codcentral.net, 10 Nov 2026; 6+ guides agree):
+//   Gold           - per weapon: after its 8 Military and 3 Special camos.
+//   Platinum       - "Complete N Gold Camo Challenges using <class>": goldNeeded below.
+//                    N is the launch count and did NOT go up when Season 1 added the
+//                    Cronen Osprey (AR) and CSG-35 (SMG), so any 8 of the 9 ARs will do.
+//   Harmonic Break - "Complete 33 Platinum Camo Challenges": account-wide, any weapons.
+//   Divergence     - ONE account-wide camo, awarded for 33 Harmonic Break challenges; it
+//                    unlocks on every weapon at once (see masteryGate below).
+// Whether Season 1 guns count toward the 33s isn't officially confirmed (guides say they
+// can stand in); the app counts every weapon listed.
+const platinumNeededForHarmonic = 33;
+const harmonicNeededForDivergence = 33;
+
 const classLabels = {
     "ASSAULT RIFLES": "Assault Rifle",
     "SMGS": "SMG",
@@ -376,38 +390,47 @@ const classLabels = {
 
 const classChallenges = {
     "ASSAULT RIFLES": {
+        goldNeeded: 8,
         platinum: ch("50 headshots against players", "100 headshots against enemies"),
         harmonic: ch("25 double kills against players", "50 double kills against enemies")
     },
     "SMGS": {
+        goldNeeded: 5,
         platinum: ch("25 player kills from behind", "75 enemy kills from behind"),
         harmonic: ch("50 hipfire kills against players", "100 hipfire kills against enemies")
     },
     "SHOTGUNS": {
+        goldNeeded: 2,
         platinum: ch("50 hipfire kills against players", "125 hipfire kills against enemies"),
         harmonic: ch("2 player kills without reloading 25 times", "2 enemy kills without reloading 50 times")
     },
     "LMGS": {
+        goldNeeded: 3,
         platinum: ch("3 player kills without dying 15 times", "3 enemy kills without taking damage 50 times"),
         harmonic: ch("2 player kills without releasing the trigger 25 times", "2 enemy kills without releasing the trigger 75 times")
     },
     "MARKSMAN RIFLES": {
+        goldNeeded: 3,
         platinum: ch("75 player kills while prone", "150 enemy kills while prone"),
         harmonic: ch("75 one shot kills against players", "150 one shot kills against enemies")
     },
     "SNIPER RIFLES": {
+        goldNeeded: 3,
         platinum: ch("75 player kills while prone", "150 enemy kills while prone"),
         harmonic: ch("75 one shot kills against players", "150 one shot kills against enemies")
     },
     "PISTOLS": {
+        goldNeeded: 4,
         platinum: ch("20 player kills from behind", "75 enemy kills from behind"),
         harmonic: ch("40 hipfire kills against players", "100 hipfire kills against enemies")
     },
     "LAUNCHERS": {
+        goldNeeded: 4,
         platinum: ch("2 player kills without taking damage 15 times", "2 enemy kills without taking damage 50 times"),
         harmonic: ch("10 player kills in a single match 7 times", "10 enemy kills in a single match 15 times")
     },
     "MELEE": {
+        goldNeeded: 1,
         platinum: ch("3 player kills without dying 15 times", "3 enemy kills without taking damage 50 times"),
         harmonic: ch("25 player kills from behind", "75 enemy kills from behind")
     }
@@ -417,28 +440,36 @@ const buildCompletionist = (type) => {
     const label = classLabels[type] || "class";
     const c = classChallenges[type] || {};
     const empty = { mp: "", dmz: "" };
-    const divergence = `Complete the Harmonic Break challenge on every ${label} weapon`;
+    const goldNeeded = c.goldNeeded || 0;
+    const divergence = `Earned once for your account after ${harmonicNeededForDivergence} Harmonic Break challenges; it unlocks on every weapon at once`;
+    // gate = what the app counts for the live "LOCKED / OPEN" line under each camo
     return [
         {
             id: "gold", name: "GOLD", tier: "gold",
             challenge: ch("15 player kills in a single match",
                 type === "LAUNCHERS" ? "50 enemy kills in a single DMZ match" : "100 enemy kills in a single DMZ match"),
-            unlock: "Opens after all 8 Military and 3 Special camos on this weapon"
+            unlock: "Opens after all 8 Military and 3 Special camos on this weapon",
+            gate: { kind: "weapon" }
         },
         {
             id: "platinum", name: "PLATINUM", tier: "platinum",
             challenge: c.platinum || empty,
-            unlock: `Opens after Gold on every ${label} weapon`
+            unlock: `Opens after ${goldNeeded} Gold camo${goldNeeded === 1 ? "" : "s"} on ${label} weapons`,
+            gate: { kind: "classGold", need: goldNeeded, label }
         },
         {
             id: "harmonic", name: "HARMONIC BREAK", tier: "harmonic",
             challenge: c.harmonic || empty,
-            unlock: "Opens after Platinum"
+            unlock: `Opens after ${platinumNeededForHarmonic} Platinum camos on any weapons (account-wide)`,
+            gate: { kind: "platinumTotal", need: platinumNeededForHarmonic }
         },
         {
+            // Account-wide: ticking it on one weapon ticks it on all (script.js keeps one flag)
             id: "divergence", name: "DIVERGENCE", tier: "divergence",
             challenge: { mp: divergence, dmz: divergence },
-            unlock: "Opens after Harmonic Break"
+            unlock: "Account-wide: tick it on any weapon and it's done on every weapon",
+            account: true,
+            gate: { kind: "harmonicTotal", need: harmonicNeededForDivergence }
         }
     ].map(camo => ({ ...camo, modes: ["mp", "dmz"], section: "COMPLETIONIST" }));
 };
