@@ -672,7 +672,8 @@ const dmzSettings = {
         ],
         "Vendor Item Upgrade": [
             { cash: 0, items: { "Electronic Sensors": 20, "CPU": 10, "Printed Circuit Board": 10, "Prototype RF Module": 2 }, gives: "More items for sale", verify: "No cash per one site; others don't list cash" },
-            { cash: null, items: { "Control Unit": 20, "High-Tenacity Fibers": 10, "Nylon Cloth": 10, "Nano-Structured Alloy": 2 }, gives: "More items for sale" }
+            // Tier II: no cash confirmed in game (27 Nov 2026)
+            { cash: 0, items: { "Control Unit": 20, "High-Tenacity Fibers": 10, "Nylon Cloth": 10, "Nano-Structured Alloy": 2 }, gives: "More items for sale" }
         ],
         "Bank Upgrade": [
             { cash: 20000, items: {}, gives: "Bank holds $250,000" },
