@@ -662,7 +662,8 @@ const dmzSettings = {
         "MIA Recovery Discount": [
             { cash: 0, items: { "Regional Combat Notes": 5, "Control Unit": 10, "Rigid Synthetics": 10 }, gives: "Rescues 5% cheaper" },
             { cash: 0, items: { "Nuclear Program Files": 5, "Degraded Execution Footage": 5, "Binding Catalyst": 10, "Nitro Compounds": 10 }, gives: "Rescues 5% cheaper", verify: "No cash per one site; others don't list cash" },
-            { cash: 0, items: { "W.M.D. Manifest": 5, "Foreign Intelligence Targets": 5, "Power Regulator": 10, "Comms Module": 10 }, gives: "Rescues 5% cheaper", verify: "No cash per one site; others don't list cash" },
+            // Tier III: no cash confirmed in game (27 Nov 2026)
+            { cash: 0, items: { "W.M.D. Manifest": 5, "Foreign Intelligence Targets": 5, "Power Regulator": 10, "Comms Module": 10 }, gives: "Rescues 5% cheaper" },
             { cash: null, items: { "Sanctioned Assassination List": 5, "Ballistic Fabric": 30, "Nylon Laminate": 30, "Prototype RF Module": 10 }, gives: "Rescues 5% cheaper" }
         ],
         "Gunsmith Upgrade": [
