@@ -86,8 +86,8 @@ const ch = (mp, dmz) => ({ mp: `Get ${mp}`, dmz: `Get ${dmz}` });
 // upblazed.com, gamerant, mw4camo.com (ARs, patch 1.005.001), bosslobbies.com. Most guns:
 // 4-6 sites agree.
 // Checked in game by the owner (27 Nov 2026): M4 Military 1 = 10 (matches the sites);
-// CSG-35 Military 1 = 11 and Military 8 = 62, Cronen Osprey Military 1 = 12. Every site
-// had both Season 1 guns wrong, so their other levels stay 0 until checked in game.
+// CSG-35 all 8 = 11/15/19/23/27/31/35/39; Cronen Osprey all 8 = 12/19/25/33/40/48/55/63. Every site
+// had both Season 1 guns wrong. (An earlier reading of CSG-35 Military 8 = 62 was replaced by 39.)
 // Lower confidence: HYEON BURST Military 8 (62 on 5 sites, 63 on 2).
 //
 // GAME ONLY SHOWS A COUNTDOWN? ("Earn 22 more weapon unlocks using the ...")
@@ -107,14 +107,14 @@ const militaryLevels = {
     "KASTOV 762":           [10, 19, 27, 37, 45, 54, 61, 67],
     "AXION":                [10, 19, 26, 34, 41, 48, 55, 62],
     "CRONEN SQUALL":        [10, 17, 24, 31, 39, 45, 54, 60],
-    "CRONEN OSPREY":        [12, 0, 0, 0, 0, 0, 0, 0],          // Season 1; Military 1 checked in game, rest not confirmed
+    "CRONEN OSPREY":        [12, 19, 25, 33, 40, 48, 55, 63],   // Season 1; all 8 checked in game
     "PATRIOT XMR":          [11, 20, 28, 36, 43, 52, 59, 66],
     "ODEN":                 [12, 21, 25, 33, 39, 46, 53, 59],
     "HYEON BURST":          [10, 17, 26, 32, 40, 49, 55, 62],   // Military 8: 62 or 63
     // SMGS
     "WZ.55 STRIGA":         [12, 18, 23, 29, 36, 41, 47, 54],
     "X-58 NYX":             [9, 15, 20, 25, 29, 35, 42, 47],
-    "CSG-35":               [11, 0, 0, 0, 0, 0, 0, 62],         // Season 1; Military 1 and 8 checked in game, rest not confirmed
+    "CSG-35":               [11, 15, 19, 23, 27, 31, 35, 39],   // Season 1; all 8 checked in game
     "ISO NIGHTSHADE":       [12, 19, 25, 31, 38, 44, 50, 57],
     "PPSH-41":              [11, 17, 23, 31, 38, 44, 51, 57],
     "VEL 46":               [9, 15, 22, 28, 33, 40, 47, 54],

@@ -10,7 +10,7 @@ const url = 'file:///' + path.join(projectDir, 'index.html').split(path.sep).joi
 const KEY = 'mw4-tracker-v1';
 
 // The approved levels (researched 27 Nov 2026). Checked in game: M4 Military 1 = 10,
-// CSG-35 Military 1 = 11 and 8 = 62, Cronen Osprey Military 1 = 12 (0 = not confirmed yet).
+// CSG-35 and Cronen Osprey all 8 (0 = not confirmed yet).
 // Kept here on purpose, separate from mw4-data.js, so a wrong edit to the data is caught.
 const EXPECTED = {
     'HAN 86': [10, 18, 25, 34, 42, 50, 57, 65],
@@ -18,13 +18,13 @@ const EXPECTED = {
     'KASTOV 762': [10, 19, 27, 37, 45, 54, 61, 67],
     'AXION': [10, 19, 26, 34, 41, 48, 55, 62],
     'CRONEN SQUALL': [10, 17, 24, 31, 39, 45, 54, 60],
-    'CRONEN OSPREY': [12, 0, 0, 0, 0, 0, 0, 0],
+    'CRONEN OSPREY': [12, 19, 25, 33, 40, 48, 55, 63],
     'PATRIOT XMR': [11, 20, 28, 36, 43, 52, 59, 66],
     'ODEN': [12, 21, 25, 33, 39, 46, 53, 59],
     'HYEON BURST': [10, 17, 26, 32, 40, 49, 55, 62],
     'WZ.55 STRIGA': [12, 18, 23, 29, 36, 41, 47, 54],
     'X-58 NYX': [9, 15, 20, 25, 29, 35, 42, 47],
-    'CSG-35': [11, 0, 0, 0, 0, 0, 0, 62],
+    'CSG-35': [11, 15, 19, 23, 27, 31, 35, 39],
     'ISO NIGHTSHADE': [12, 19, 25, 31, 38, 44, 50, 57],
     'PPSH-41': [11, 17, 23, 31, 38, 44, 51, 57],
     'VEL 46': [9, 15, 22, 28, 33, 40, 47, 54],
@@ -102,8 +102,8 @@ const check = (label, ok, detail = '') => {
     }
     check('All 37 guns × MP and DMZ views: 8 rows each, right level in order', !wrong.length, wrong.slice(0, 5).join('\n      '));
     const full = data.guns.filter(g => EXPECTED[g] && EXPECTED[g].every(Boolean)).length;
-    check(`${full} guns have every level filled in; Osprey and CSG-35 partly (from the game); JAK 12 and ZLR Talonhawk not yet`,
-        full === 33 && EXPECTED['JAK 12'] === null && EXPECTED['ZLR TALONHAWK'] === null);
+    check(`${full} guns have every level filled in (incl. Cronen Osprey and CSG-35, from the game); JAK 12 and ZLR Talonhawk not yet`,
+        full === 35 && EXPECTED['JAK 12'] === null && EXPECTED['ZLR TALONHAWK'] === null);
 
     // ---------------------------------------------------------------
     console.log('\n3. Spot checks');
@@ -120,13 +120,14 @@ const check = (label, ok, detail = '') => {
     check('JAK 12 says the level isn\'t confirmed yet', rows.every(r => r[1] === NOT_CONFIRMED));
     await open({ ui: { mode: 'track', view: 'detail', gun: 'CSG-35', trackMode: 'mp' } });
     rows = await militaryTexts();
-    check('CSG-35: Military 1 = 11 and Military 8 = 62 (from the game), 2–7 not confirmed', rows[0][1] === 'Reach weapon level 11'
-        && rows[7][1] === 'Reach weapon level 62' && rows.slice(1, 7).every(r => r[1] === NOT_CONFIRMED));
+    check('CSG-35: all 8 from the game (11 … 39, Military 8 = 39 not the old 62)',
+        [11, 15, 19, 23, 27, 31, 35, 39].every((lv, i) => rows[i][1] === `Reach weapon level ${lv}`));
     await page.screenshot({ path: path.join(outDir, 'military-csg35.png') });
     await open({ ui: { mode: 'track', view: 'detail', gun: 'CRONEN OSPREY', trackMode: 'dmz' } });
     rows = await militaryTexts();
-    check('Cronen Osprey: Military 1 = 12 (from the game), 2–8 not confirmed', rows[0][1] === 'Reach weapon level 12'
-        && rows.slice(1).every(r => r[1] === NOT_CONFIRMED));
+    check('Cronen Osprey: all 8 from the game (12 … 63), none "not confirmed"',
+        [12, 19, 25, 33, 40, 48, 55, 63].every((lv, i) => rows[i][1] === `Reach weapon level ${lv}`));
+    await page.screenshot({ path: path.join(outDir, 'military-osprey.png') });
 
     // ---------------------------------------------------------------
     console.log('\n4. Saved progress is untouched');
