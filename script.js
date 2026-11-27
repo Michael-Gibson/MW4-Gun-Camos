@@ -416,6 +416,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const entry = state.dmz[gunName];
         if (typeof entry.manuals !== 'number') entry.manuals = 0;
         if (!Array.isArray(entry.blueprints)) entry.blueprints = [];
+        // Lock in the Gunsmith state before any edit, so changing manuals later
+        // can't flip it (old saves: 1+ manual meant unlocked; new guns: locked).
+        if (typeof entry.gunsmith !== 'boolean') entry.gunsmith = entry.manuals >= 1;
         return entry;
     };
 
@@ -899,8 +902,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================
     // RIGHT PANEL: DMZ SHARED PIECES
     // =========================
-    const buildManualPips = (gunName, interactive, onChange) => {
-        const wrap = el('div', `manual-pips${interactive ? ' interactive' : ''}`);
+    // compact = smaller clickable pips for the overview cards
+    const buildManualPips = (gunName, interactive, onChange, compact = false) => {
+        const wrap = el('div', `manual-pips${interactive ? ' interactive' : ''}${compact ? ' compact' : ''}`);
         const manuals = peekDmz(gunName).manuals || 0;
         for (let n = 1; n <= dmzSettings.manualsForCamo; n++) {
             const pip = el(interactive ? 'button' : 'span', 'pip');
@@ -997,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderDmzOverview = () => {
         rightPanel.innerHTML = '';
         const header = buildDmzHeader();
-        header.appendChild(el('p', 'panel-subtitle', `Gunsmith unlocks and ${dmzSettings.lootCamoName} manuals per weapon. Click LOCKED / GUNSMITH to toggle, or a weapon to edit.`));
+        header.appendChild(el('p', 'panel-subtitle', `Gunsmith unlocks and ${dmzSettings.lootCamoName} manuals per weapon. Click the diamonds or LOCKED / GUNSMITH to update, or anywhere else on a card to open it.`));
         rightPanel.appendChild(header);
 
         const unlocked = allGuns.filter(g => getDmzStatus(g) !== 'dmz-locked').length;
@@ -1029,17 +1033,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     selectGun(gunName);
                 });
 
-                const top = el('div', 'dmz-card-top');
-                top.appendChild(el('span', 'dmz-card-name', gunName));
-                top.appendChild(buildManualPips(gunName, false));
-                card.appendChild(top);
-
-                card.appendChild(buildGunsmithToggle(gunName, () => {
+                // Pips and the Gunsmith toggle edit in place; the rest of the card opens the weapon.
+                const refreshOverview = () => {
                     const keepScroll = rightPanel.scrollTop;
                     updateGunAndType(gunName);
                     renderDmzOverview();
                     rightPanel.scrollTop = keepScroll;
-                }));
+                };
+
+                const top = el('div', 'dmz-card-top');
+                top.appendChild(el('span', 'dmz-card-name', gunName));
+                top.appendChild(buildManualPips(gunName, true, refreshOverview, true));
+                card.appendChild(top);
+
+                card.appendChild(buildGunsmithToggle(gunName, refreshOverview));
 
                 const chips = el('div', 'bp-chips');
                 (dmz.blueprints || []).forEach(bp => {
@@ -2203,6 +2210,13 @@ document.addEventListener('DOMContentLoaded', () => {
             state.ui.dmzGun = null;
             saveState();
             render();
+            // Return to the spot in the list where this weapon was opened.
+            const spot = loadoutListScroll;
+            loadoutListScroll = null;
+            if (spot && spot.view === state.ui.dmzView) {
+                rightPanel.scrollTop = spot.panel;
+                window.scrollTo(0, spot.page);
+            }
         });
         rightPanel.appendChild(back);
 
@@ -2392,6 +2406,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================
     // SELECTION + RENDER
     // =========================
+    // Scroll position of the DMZ weapon list when a weapon was opened from it
+    // ({ view, panel, page }). Not saved: it only matters for the back button.
+    let loadoutListScroll = null;
+
     const selectGun = (gunName) => {
         // Switching guns on a camo tab keeps the same scroll spot, so you can flip between
         // guns and compare the same section without scrolling back down each time.
@@ -2399,8 +2417,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clicking a gun in the sidebar from Stats (opened from Challenges) goes to its camos
         if (!isCamoMode() && state.ui.mode !== LOADOUT_MODE) state.ui.mode = modeOrder[0];
         state.ui.view = 'detail';
-        if (state.ui.mode === LOADOUT_MODE) state.ui.dmzGun = gunName;
-        else state.ui.gun = gunName;
+        if (state.ui.mode === LOADOUT_MODE) {
+            // Opening a weapon from the DMZ list: remember the scroll spot for the back button.
+            if (!state.ui.dmzGun) {
+                loadoutListScroll = { view: state.ui.dmzView, panel: rightPanel.scrollTop, page: window.scrollY };
+            }
+            state.ui.dmzGun = gunName;
+        } else state.ui.gun = gunName;
         saveState();
         render({ keepScroll });
     };

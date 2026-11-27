@@ -870,6 +870,17 @@ button { font-family: inherit; }
 
 .manual-pips.interactive .pip:hover { border-color: var(--accent); transform: rotate(45deg) scale(1.1); }
 
+/* Clickable pips on the overview cards: smaller, but still easy to hit */
+.manual-pips.interactive.compact { gap: 9px; }
+
+.manual-pips.interactive.compact .pip {
+    width: 15px;
+    height: 15px;
+}
+
+.manual-pips.interactive .pip:hover:not(.filled) { background: var(--accent-glow); }
+.manual-pips.interactive .pip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .bp-chips {
     display: flex;
     flex-wrap: wrap;

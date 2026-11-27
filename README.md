@@ -33,7 +33,7 @@ The weapon list on the left is grouped by class and searchable. Each weapon is c
 
 ### DMZ Loadout
 
-- **Weapons & Manuals:** mark which weapons are unlocked at the Gunsmith (click a card's **LOCKED / ✓ GUNSMITH** button) and, separately, how many Weapon Manuals you've extracted toward the *War Spoils* camo (3 needed), plus per-weapon blueprints. The overview works well on a second monitor.
+- **Weapons & Manuals:** mark which weapons are unlocked at the Gunsmith (click a card's **LOCKED / ✓ GUNSMITH** button) and, separately, how many Weapon Manuals you've extracted toward the *War Spoils* camo (click the diamonds, 3 needed), plus per-weapon blueprints. Click anywhere else on a card to open that weapon. The overview works well on a second monitor.
 - **Blueprints & Recipes:** a checklist of 3D Printer recipes grouped like the in-game menu, with rarity tags and tiered upgrades (I, II, III…).
 - **Notes & Materials:** a notepad and a materials tracker. Pick the items you're crafting and it builds a shopping list of the materials you need, with have/need counts.
 
