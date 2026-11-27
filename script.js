@@ -241,6 +241,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Older saves stored checkboxes as arrays by position. Convert them to keyed objects.
     let migrated = false;
+
+    // Guns renamed to match the game (mw4-data.js weaponRenames, e.g. "REZI-12" -> "REZI 12"):
+    // move everything saved under the old name to the new one. If both exist (a backup
+    // from before and after), camo ticks are combined and the newer entry wins otherwise.
+    Object.entries(appData.weaponRenames || {}).forEach(([from, to]) => {
+        const move = (store, combine) => {
+            if (!store || typeof store !== 'object' || !(from in store)) return;
+            const old = store[from];
+            const cur = store[to];
+            store[to] = cur === undefined ? old : (combine ? combine(old, cur) : cur);
+            delete store[from];
+            migrated = true;
+        };
+        const combineTicks = (old, cur) => (old && cur && typeof old === 'object' && typeof cur === 'object'
+            && !Array.isArray(old) && !Array.isArray(cur) ? { ...old, ...cur } : cur);
+        Object.values(state.camos || {}).forEach(guns => move(guns, combineTicks));
+        move(state.dmz);
+        move(state.levels);
+        ['gun', 'dmzGun'].forEach(k => {
+            if (state.ui[k] === from) { state.ui[k] = to; migrated = true; }
+        });
+    });
     Object.entries(state.camos).forEach(([mode, guns]) => {
         Object.entries(guns || {}).forEach(([gunName, value]) => {
             if (!Array.isArray(value)) return;

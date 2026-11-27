@@ -26,16 +26,27 @@ const gunTypes = [
 // VERIFY against your in-game list. MW4 launched with 33 weapons; this list has
 // 37 names, so a few are probably seasonal / post-launch. Delete or rename freely.
 // Progress is saved by weapon name, so renaming a gun resets that gun's checkboxes.
+// In the in-game order (DMZ Gunsmith weapon list; checked 27 Nov 2026 from in-game
+// screenshots of the Assault Rifle and Launcher lists plus 6 guides that follow the
+// game's order). The order is fixed, not by unlock level, and Season 1 guns are added at
+// the end of their class. JAK 12 and ZLR TALONHAWK (unreleased) are placed last for now.
+// Progress is saved by these names: to rename a gun, add it to weaponRenames below.
 const weaponsByType = {
-    "ASSAULT RIFLES": ["HAN 86", "M4", "KASTOV 762", "AXION", "CRONEN SQUALL", "CRONEN OSPREY", "PATRIOT XMR", "ODEN", "HYEON BURST"],
-    "SMGS": ["WZ.55 STRIGA", "X-58 NYX", "CSG-35", "ISO NIGHTSHADE", "PPSH-41", "VEL 46"],
-    "SHOTGUNS": ["REZI-12", "JAK 12", "WARLORD"],
+    "ASSAULT RIFLES": ["HAN 86", "M4", "HYEON BURST", "KASTOV 762", "PATRIOT XMR", "ODEN", "AXION", "CRONEN SQUALL", "CRONEN OSPREY"],
+    "SMGS": ["ISO NIGHTSHADE", "VEL 46", "WZ.55 STRIGA", "PPSH-41", "X-58 NYX", "CSG-35"],
+    "SHOTGUNS": ["REZI 12", "WARLORD", "JAK 12"],
     "LMGS": ["FINN LMG", "TYPE 73", "APOC-338"],
     "MARKSMAN RIFLES": ["MAR-9", "ORIS 8.6", "MOSIN-NAGANT"],
-    "SNIPER RIFLES": ["SIGNAL 50", "KG-7 VULCAN", "ASTAROTH .57"],
+    "SNIPER RIFLES": ["KG-7 VULCAN", "ASTAROTH .57", "SIGNAL 50"], // "SIGNAL 50" vs "SIGNAL .50": sources split (verify)
     "PISTOLS": ["SANG 9MM", "KRAIT P68", ".50 GS", "MOJAVE .357"],
-    "LAUNCHERS": ["RPG-8", "PILA", "JOKR", "PM-40 ANVIL"],
+    "LAUNCHERS": ["PILA", "RPG-8", "JOKR", "PM-40 ANVIL"],
     "MELEE": ["FSS CARBON EDGE 1095", "ZLR TALONHAWK"]
+};
+
+// Guns renamed to match the game: old saved name -> new name. script.js moves saved
+// progress (camos, DMZ loadout, weapon level) over to the new name once.
+const weaponRenames = {
+    "REZI-12": "REZI 12" // the game writes "Rezi 12" (27 Nov 2026)
 };
 
 // =========================
@@ -124,7 +135,7 @@ const militaryLevels = {
     "PPSH-41":              [11, 17, 23, 31, 38, 44, 51, 57],
     "VEL 46":               [9, 15, 22, 28, 33, 40, 47, 54],
     // SHOTGUNS
-    "REZI-12":              [11, 18, 26, 30, 38, 42, 47, 54],
+    "REZI 12":              [11, 18, 26, 30, 38, 42, 47, 54],
     "JAK 12":               [0, 0, 0, 0, 0, 0, 0, 0],           // unreleased event weapon
     "WARLORD":              [13, 19, 25, 30, 37, 43, 49, 55],
     // LMGS
@@ -203,7 +214,7 @@ const specialLevels = {
     "PPSH-41":              [20, 41, 62],
     "VEL 46":               [20, 40, 60],
     // SHOTGUNS
-    "REZI-12":              [22, 42, 60],
+    "REZI 12":              [22, 42, 60],
     "JAK 12":               [0, 0, 0],      // unreleased event weapon
     "WARLORD":              [21, 41, 60],
     // LMGS
@@ -316,7 +327,7 @@ const specialCamos = {
         ["GUNMETAL", ch("20 headshots", "75 headshots")]
     ],
     // SHOTGUNS
-    "REZI-12": [
+    "REZI 12": [
         ["STRUCK OIL", ch("20 point blank kills", "75 point blank kills")],
         ["BRUSHSTROKE", ch("10 longshot kills", "50 longshot kills")],
         ["WHITE PINE", ch("40 kills while jumping", "100 kills while jumping")]
@@ -453,7 +464,7 @@ const specialWarzone = {
     "PPSH-41": ["2 kills within 10 seconds 5 times", "10 longshot kills against players", "45 player kills while ADS"],
     "VEL 46": ["25 player kills while ADS", "10 player kills while prone", "10 headshots against players"],
     // SHOTGUNS
-    "REZI-12": ["10 point blank kills against players", "5 longshot kills against players", "20 player kills while jumping"],
+    "REZI 12": ["10 point blank kills against players", "5 longshot kills against players", "20 player kills while jumping"],
     "WARLORD": ["10 player kills while moving", "2 kills within 10 seconds 5 times", "25 player kills while prone"],
     // LMGS
     // FINN LMG Green Tiger: codmunity + bosslobbies say "without reloading"; gamerant says "2 kills within 10 seconds 5 times" (verify)
@@ -1125,6 +1136,7 @@ const weapons = Object.fromEntries(
 window.MW4_TRACKER_DATA = {
     gunTypes,
     weaponsByType,
+    weaponRenames,
     modeOrder,
     modeLabels,
     trackViews,

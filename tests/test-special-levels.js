@@ -18,7 +18,7 @@ const EXPECTED = {
     'ODEN': [25, 44, 65], 'HYEON BURST': [23, 46, 68],
     'WZ.55 STRIGA': [20, 41, 60], 'X-58 NYX': [17, 35, 53], 'CSG-35': [16, 29, 43],
     'ISO NIGHTSHADE': [22, 44, 64], 'PPSH-41': [20, 41, 62], 'VEL 46': [20, 40, 60],
-    'REZI-12': [22, 42, 60], 'JAK 12': null, 'WARLORD': [21, 41, 60],
+    'REZI 12': [22, 42, 60], 'JAK 12': null, 'WARLORD': [21, 41, 60],
     'FINN LMG': [18, 39, 60], 'TYPE 73': [23, 45, 65], 'APOC-338': [14, 35, 55],
     'MAR-9': [26, 49, 73], 'ORIS 8.6': [26, 48, 69], 'MOSIN-NAGANT': [24, 46, 68],
     'SIGNAL 50': [28, 52, 74], 'KG-7 VULCAN': [22, 47, 75],
@@ -106,7 +106,7 @@ const check = (label, ok, detail = '') => {
     rows = await specialRows();
     check('Type 73 in in-game order: Ash Pine 23, Outcrop 45, Foxtrail 65', rows.map(r => r.join(' ')).join(' / ') ===
         'ASH PINE Opens at weapon level 23 / OUTCROP Opens at weapon level 45 / FOXTRAIL Opens at weapon level 65');
-    await open({ ui: { mode: 'track', view: 'detail', gun: 'REZI-12', trackMode: 'mp' } });
+    await open({ ui: { mode: 'track', view: 'detail', gun: 'REZI 12', trackMode: 'mp' } });
     rows = await specialRows();
     check('Rezi-12 camo is spelled "BRUSHSTROKE"', rows.some(r => r[0] === 'BRUSHSTROKE') && !rows.some(r => r[0] === 'BRUSH STROKE'));
     await open({ ui: { mode: 'track', view: 'detail', gun: 'KASTOV 762', trackMode: 'mp' } });

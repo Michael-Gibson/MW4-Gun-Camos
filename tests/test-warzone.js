@@ -30,7 +30,7 @@ const SPECIAL = {
     'ISO NIGHTSHADE': ['Get 25 player kills while ADS', 'Get 2 kills within 10 seconds 5 times', 'Get 10 longshot kills against players'],
     'PPSH-41': ['Get 2 kills within 10 seconds 5 times', 'Get 10 longshot kills against players', 'Get 45 player kills while ADS'],
     'VEL 46': ['Get 25 player kills while ADS', 'Get 10 player kills while prone', 'Get 10 headshots against players'],
-    'REZI-12': ['Get 10 point blank kills against players', 'Get 5 longshot kills against players', 'Get 20 player kills while jumping'],
+    'REZI 12': ['Get 10 point blank kills against players', 'Get 5 longshot kills against players', 'Get 20 player kills while jumping'],
     'JAK 12': null,
     'WARLORD': ['Get 10 player kills while moving', 'Get 2 kills within 10 seconds 5 times', 'Get 25 player kills while prone'],
     'FINN LMG': ['Get 10 point blank kills against players', 'Get 2 kills without reloading 5 times against players', 'Get 15 longshot kills against players'],
