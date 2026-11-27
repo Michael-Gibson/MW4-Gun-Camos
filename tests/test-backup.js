@@ -212,7 +212,8 @@ const diffKeys = (a, b) => [...new Set([...Object.keys(a || {}), ...Object.keys(
     console.log('\n8. Old-format backup (before today\'s changes)');
     const oldBackup = {
         camos: {
-            track: { 'M4': [true, true] },                // oldest array format
+            track: { 'M4': [true, true],                  // oldest array format
+                     'TYPE 73': { sp1: true } },           // old Type 73 order: sp1 was Outcrop
             mp: { 'M4': { '0': true } },                  // old per-weapon MP Mastery: Mercurial Drift
             dmz: { 'AXION': { '0': true, '1': true } },   // old DMZ Mastery: Chiral + Ripple Tide
             wz: {}
@@ -230,6 +231,8 @@ const diffKeys = (a, b) => [...new Set([...Object.keys(a || {}), ...Object.keys(
     check('Old Mastery checks → Mercurial Drift, Chiral, Ripple Tide done', conv.mastery['mercurial-drift']?.done && conv.mastery.chiral?.done
         && conv.mastery['ripple-tide']?.done && Object.values(conv.mastery).filter(m => m.done).length === 3);
     check('Oldest array checks → Military 1 & 2 on M4', conv.camos.track.M4.mil1 === true && conv.camos.track.M4.mil2 === true);
+    check('Old Type 73 Outcrop tick (sp1) moves to the new Outcrop id (sp2)', conv.camoOrder === 2
+        && conv.camos.track['TYPE 73'].sp2 === true && !conv.camos.track['TYPE 73'].sp1);
     check('Gunsmith: ODEN (2 manuals) unlocked, AXION locked', await page.evaluate(() => true) && conv.dmz.ODEN.manuals === 2);
     await go({ mode: 'loadout', dmzView: 'weapons', dmzGun: null });
     check('…shown on the cards', (await dcard('ODEN').locator('.gunsmith-toggle').textContent()) === '✓ GUNSMITH'

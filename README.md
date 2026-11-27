@@ -23,7 +23,7 @@ python -m http.server
 
 | Tab | What it tracks |
 | --- | --- |
-| **Camo Track** | The full per-weapon track: 8 Military camos (each shows the weapon level that unlocks it, e.g. "Reach weapon level 26"), 3 weapon-specific Special camos, then Gold → Platinum → Harmonic Break → Divergence. A **Multiplayer / DMZ** toggle switches the challenge text for each view. Camos earnable in both modes are shared, so checking one in either view marks it done in both. Gold, Platinum, Harmonic Break and Divergence each show a live **LOCKED / ✓ OPEN** line built from what you've ticked, for example "LOCKED · 6/8 Assault Rifle Golds" plus the weapons that still need Gold, or "12/33 Platinum camos (any weapon)". **Divergence is account-wide:** tick it on any weapon and it's done on all, and it's earned automatically at 33 Harmonic Breaks. |
+| **Camo Track** | The full per-weapon track: 8 Military camos (each shows the weapon level that unlocks it, e.g. "Reach weapon level 26"), 3 weapon-specific Special camos (each shows the weapon level that opens it, e.g. "Opens at weapon level 46"), then Gold → Platinum → Harmonic Break → Divergence. A **Multiplayer / DMZ** toggle switches the challenge text for each view. Camos earnable in both modes are shared, so checking one in either view marks it done in both. Gold, Platinum, Harmonic Break and Divergence each show a live **LOCKED / ✓ OPEN** line built from what you've ticked, for example "LOCKED · 6/8 Assault Rifle Golds" plus the weapons that still need Gold, or "12/33 Platinum camos (any weapon)". **Divergence is account-wide:** tick it on any weapon and it's done on all, and it's earned automatically at 33 Harmonic Breaks. |
 | **Prestige** | Weapon Prestige camos (the Pyroclast set), per weapon. |
 | **Mastery** | The account-wide Mastery camos, with **Multiplayer**, **DMZ** and **Warzone** side by side. Each camo shows its challenge, the camo it needs first, and a progress counter (e.g. 112 / 300) that ticks the camo done when you reach the target. A **Divergence** box at the top counts your Harmonic Breaks toward the 33 that open Mastery. |
 
@@ -58,6 +58,7 @@ The `tests/` folder has browser tests that drive the real app in headless Micros
 - DMZ weapon cards and the Season 1 camos;
 - Camo Track lock status and account-wide Divergence;
 - Military unlock levels for every gun;
+- Special camo unlock levels for every gun;
 - Notes & Materials (layout, shopping list, messages, sorting);
 - 3D Printer upgrades and costs;
 - the Mastery tab;
@@ -81,6 +82,7 @@ All game data is in [`mw4-data.js`](mw4-data.js), and the app logic in [`script.
 | --- | --- |
 | Weapons or classes | `gunTypes` and `weaponsByType` |
 | Military camo unlock levels | `militaryLevels` (use `0` if unknown). If the game only shows a countdown, use `fromRemaining(currentLevel, [...])` |
+| Special camo unlock levels | `specialLevels` (use `0` if unknown) |
 | Special camo names and challenges | `specialCamos` |
 | Gold / Platinum / Harmonic Break challenges | `classChallenges` |
 | Mastery camos (challenges, targets, order) | `masteryModes`, and `masteryGate` for Divergence |
@@ -96,7 +98,7 @@ Tier and rarity colors are defined in [`styles.css`](styles.css) under **TIER CO
 
 ### Data accuracy
 
-Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Season 1 weapons (Cronen Osprey, CSG-35) come from community guides published after they released. Military unlock levels were checked across 4–6 community sites for every gun (Nov 2026), plus some in game: the M4 matched the sites, but the sites had both Season 1 guns wrong. The Cronen Osprey's eight Military levels (12, 19, 25, 33, 40, 48, 55, 63) were all checked in game. So were the CSG-35's (11, 15, 19, 23, 27, 31, 35, 39). The Hyeon Burst's Military 8 (62 or 63) is also worth checking. The JAK 12 and ZLR Talonhawk Military levels and Special camos haven't been revealed (both are upcoming in-season event rewards). 3D Printer upgrade costs come from community sites (Nov 2026); several later tiers are community-reported or have no confirmed cash cost, and those show a ⚠ note or "$ ?" in the app. MIA Recovery IV still has no confirmed cash cost. Unlock rules for the Completionist camos follow the in-game wording (Nov 2026):
+Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Season 1 weapons (Cronen Osprey, CSG-35) come from community guides published after they released. Military unlock levels were checked across 4–6 community sites for every gun (Nov 2026), plus some in game: the M4's Military 1 matched the sites, but the sites had both Season 1 guns wrong. The M4's Military 5–8 (44, 51, 59, 64) come from codcentral.net's in-game screenshots instead of the other sites (39, 44, 51, 59) and are worth checking in game. The Cronen Osprey's eight Military levels (12, 19, 25, 33, 40, 48, 55, 63) were all checked in game. So were the CSG-35's (11, 15, 19, 23, 27, 31, 35, 39). The Hyeon Burst's Military 8 (62 or 63) is also worth checking. Special camo unlock levels (Nov 2026) are official for the Han 86 and Sang 9mm. For most other guns they come from a community sheet that matches the official guns, cross-checked with in-game screenshots on codcentral.net. The Cronen Osprey, CSG-35, Kastov 762, Axion and Mosin-Nagant were checked in game, because the sites disagreed or had nothing. The sheet had the Mosin-Nagant's first Special at 25, but it's 24 in game, so values from the sheet alone could be off by one: the Oden, APOC-338, Oris 8.6, Mojave .357, launchers, FSS Carbon Edge 1095, and some later Specials. The JAK 12 and ZLR Talonhawk Military levels and Special camos haven't been revealed (both are upcoming in-season event rewards). 3D Printer upgrade costs come from community sites (Nov 2026); several later tiers are community-reported or have no confirmed cash cost, and those show a ⚠ note or "$ ?" in the app. MIA Recovery IV still has no confirmed cash cost. Unlock rules for the Completionist camos follow the in-game wording (Nov 2026):
 - **Platinum** needs a fixed number of Golds per class, set at launch (AR 8, SMG 5, Shotgun 2, LMG 3, Marksman 3, Sniper 3, Pistol 4, Launcher 4, Melee 1). Season 1 guns can count toward it but didn't raise it.
 - **Harmonic Break** needs 33 Platinum camos on any weapons.
 - **Divergence** is one account-wide camo, earned after 33 Harmonic Breaks.
@@ -124,6 +126,20 @@ Newest first. Your saved progress carries over through every change listed here.
 
 ### 2026-11-27
 
+- **Special camo unlock levels for every gun:** each Special camo now shows the weapon level that opens it, e.g. "Opens at weapon level 46". Before, only the Han 86 had them.
+  - **All 35 released guns are filled in.** The Han 86 and Sang 9mm levels are official, and most others come from community sources (see "Data accuracy").
+  - **Checked in game** (the sites disagreed or had nothing):
+    - Cronen Osprey: 24, 49, 70.
+    - CSG-35: 16, 29, 43.
+    - Kastov 762: 23, 48, 68.
+    - Axion: 23, 45, 69.
+    - Mosin-Nagant: 24, 46, 68. The sites had its first Special at 25.
+  - The unreleased JAK 12 and ZLR Talonhawk still say "Not published yet for this weapon".
+  - The levels are kept in a new `specialLevels` table in `mw4-data.js`, next to `militaryLevels`. Camo ids haven't changed, so saved progress carries over.
+- **Type 73 Special camos in the in-game order:** Ash Pine, Outcrop, Foxtrail. Six sites agree; the tracker had Outcrop, Foxtrail, Ash Pine. Your ticks move with their camo, including when you import an older backup.
+- **Rezi-12:** "Brush Stroke" is now spelled "Brushstroke", as in game. Progress is unaffected.
+- **M4 Military 5–8** changed from 39, 44, 51, 59 to 44, 51, 59, 64, from codcentral.net's in-game screenshots. Not checked in game yet.
+- New test suite `tests/test-special-levels.js` checks all 37 guns in both views, plus the Type 73 move. There are now eight suites with 362 checks.
 - **All Season 1 Military levels from the game:** the Cronen Osprey (levels 12, 19, 25, 33, 40, 48, 55, 63) and CSG-35 (levels 11, 15, 19, 23, 27, 31, 35, 39) now have all eight, so neither says "not confirmed yet" any more. The CSG-35's Military 8 changed from 62 to 39 after a recheck in game. Only the unreleased JAK 12 and ZLR Talonhawk are still unconfirmed. The military test checks both guns level by level.
 
 - **Season 1 Military levels from the game:** every community site had the Cronen Osprey and CSG-35 wrong. They now use the levels checked in game: Cronen Osprey Military 1 = level 12; CSG-35 Military 1 = level 11 and Military 8 = level 62. Their other Military camos say "Unlock level not confirmed yet" instead of showing wrong numbers.

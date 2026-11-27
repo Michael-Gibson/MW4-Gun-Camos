@@ -85,6 +85,8 @@ const ch = (mp, dmz) => ({ mp: `Get ${mp}`, dmz: `Get ${dmz}` });
 // Sources (checked 27 Nov 2026): codmunity.gg weapon pages, warzoneloadout.games,
 // upblazed.com, gamerant, mw4camo.com (ARs, patch 1.005.001), bosslobbies.com. Most guns:
 // 4-6 sites agree.
+// M4 Military 5-8 changed 27 Nov 2026 from 39/44/51/59 (the sites) to 44/51/59/64
+// (codcentral.net in-game screenshots, countdown + 1), at the owner's request; not checked in game yet.
 // Checked in game by the owner (27 Nov 2026): M4 Military 1 = 10 (matches the sites);
 // CSG-35 all 8 = 11/15/19/23/27/31/35/39; Cronen Osprey all 8 = 12/19/25/33/40/48/55/63. Every site
 // had both Season 1 guns wrong. (An earlier reading of CSG-35 Military 8 = 62 was replaced by 39.)
@@ -103,7 +105,7 @@ const fromRemaining = (currentLevel, remaining) =>
 const militaryLevels = {
     // ASSAULT RIFLES
     "HAN 86":               [10, 18, 25, 34, 42, 50, 57, 65],
-    "M4":                   [10, 18, 26, 35, 39, 44, 51, 59],
+    "M4":                   [10, 18, 26, 35, 44, 51, 59, 64],   // 5-8 from codcentral.net screenshots (owner's pick); check in game
     "KASTOV 762":           [10, 19, 27, 37, 45, 54, 61, 67],
     "AXION":                [10, 19, 26, 34, 41, 48, 55, 62],
     "CRONEN SQUALL":        [10, 17, 24, 31, 39, 45, 54, 60],
@@ -162,14 +164,79 @@ const buildMilitary = (gun) => Array.from({ length: 8 }, (_, i) => {
 });
 
 // ---- SPECIAL ----
+// Weapon level that opens each Special camo, in the same order as specialCamos below.
+// Each one shows "Opens at weapon level N" under the challenge.
+// 0 = level not confirmed yet (that camo shows "Unlock level not confirmed yet").
+// Sources (checked 27 Nov 2026):
+//   Official (callofduty.com progression blog): HAN 86 and SANG 9MM.
+//   Most guns: a community sheet (bosslobbies.com + mypandaplay.com, one origin) that
+//   matches the official guns, cross-checked with codcentral.net in-game screenshots
+//   (its "Earn N more weapon unlocks" countdowns were taken at level 1, so level = N + 1)
+//   and upblazed.com.
+//   Checked in game by the owner (27 Nov 2026): CRONEN OSPREY, CSG-35, KASTOV 762,
+//   AXION, MOSIN-NAGANT. The sheet had Mosin sp1 as 25 (it's 24), so sheet-only values
+//   can be off by one.
+//   Sheet only, not cross-checked (verify in game if you can): ODEN, APOC-338, ORIS 8.6,
+//   MOJAVE .357, the launchers, FSS CARBON EDGE 1095, and sp2/sp3 of
+//   WZ.55 STRIGA, ISO NIGHTSHADE, KRAIT P68, MAR-9 sp3, FINN LMG sp3, .50 GS sp3.
+//   JAK 12 and ZLR TALONHAWK: unreleased, so not published yet.
+const specialLevels = {
+    // ASSAULT RIFLES
+    "HAN 86":               [25, 46, 72],   // official
+    "M4":                   [26, 51, 72],
+    "KASTOV 762":           [23, 48, 68],   // checked in game
+    "AXION":                [23, 45, 69],   // checked in game
+    "CRONEN SQUALL":        [24, 45, 67],
+    "CRONEN OSPREY":        [24, 49, 70],   // Season 1; checked in game
+    "PATRIOT XMR":          [24, 49, 72],
+    "ODEN":                 [25, 44, 65],
+    "HYEON BURST":          [23, 46, 68],
+    // SMGS
+    "WZ.55 STRIGA":         [20, 41, 60],
+    "X-58 NYX":             [17, 35, 53],
+    "CSG-35":               [16, 29, 43],   // Season 1; checked in game
+    "ISO NIGHTSHADE":       [22, 44, 64],
+    "PPSH-41":              [20, 41, 62],
+    "VEL 46":               [20, 40, 60],
+    // SHOTGUNS
+    "REZI-12":              [22, 42, 60],
+    "JAK 12":               [0, 0, 0],      // unreleased event weapon
+    "WARLORD":              [21, 41, 60],
+    // LMGS
+    "FINN LMG":             [18, 39, 60],
+    "TYPE 73":              [23, 45, 65],
+    "APOC-338":             [15, 36, 56],
+    // MARKSMAN RIFLES
+    "MAR-9":                [26, 49, 73],
+    "ORIS 8.6":             [27, 49, 70],
+    "MOSIN-NAGANT":         [24, 46, 68],   // checked in game (the sheet said 25 for sp1)
+    // SNIPER RIFLES
+    "SIGNAL 50":            [28, 52, 74],
+    "KG-7 VULCAN":          [22, 47, 75],
+    // PISTOLS
+    "ASTAROTH .57":         [20, 37, 54],
+    "SANG 9MM":             [13, 25, 38],   // official
+    "KRAIT P68":            [13, 25, 38],
+    ".50 GS":               [18, 34, 50],
+    "MOJAVE .357":          [16, 30, 44],
+    // LAUNCHERS
+    "RPG-8":                [16, 31, 46],
+    "PILA":                 [16, 31, 46],
+    "JOKR":                 [16, 31, 46],
+    "PM-40 ANVIL":          [16, 31, 46],
+    // MELEE
+    "FSS CARBON EDGE 1095": [16, 31, 46],
+    "ZLR TALONHAWK":        [0, 0, 0]       // unreleased event weapon
+};
+
 // Three weapon-specific camos per gun, in in-game order.
-// [name, challenge, optional unlock note]
+// [name, challenge]
 const specialCamos = {
     // ASSAULT RIFLES
     "HAN 86": [
-        ["SMOKE", ch("20 mounted player kills", "75 mounted enemy kills"), "Opens at weapon level 25"],
-        ["STORMWAVE", ch("50 player kills while using a suppressor", "125 enemy kills while using a suppressor"), "Opens at weapon level 46"],
-        ["RED", ch("3 player kills without dying 15 times", "3 enemy kills without taking damage 50 times"), "Opens at weapon level 72"]
+        ["SMOKE", ch("20 mounted player kills", "75 mounted enemy kills")],
+        ["STORMWAVE", ch("50 player kills while using a suppressor", "125 enemy kills while using a suppressor")],
+        ["RED", ch("3 player kills without dying 15 times", "3 enemy kills without taking damage 50 times")]
     ],
     "M4": [
         ["MYRIAD", ch("20 point blank kills", "75 point blank kills")],
@@ -247,7 +314,7 @@ const specialCamos = {
     // SHOTGUNS
     "REZI-12": [
         ["STRUCK OIL", ch("20 point blank kills", "75 point blank kills")],
-        ["BRUSH STROKE", ch("10 longshot kills", "50 longshot kills")],
+        ["BRUSHSTROKE", ch("10 longshot kills", "50 longshot kills")],
         ["WHITE PINE", ch("40 kills while jumping", "100 kills while jumping")]
     ],
     "WARLORD": [
@@ -261,10 +328,12 @@ const specialCamos = {
         ["GREEN TIGER", ch("2 kills without reloading 10 times", "2 kills without reloading 30 times")],
         ["THUNDERHEAD", ch("30 longshot kills", "100 longshot kills")]
     ],
+    // In-game order (6 sites agree). Before 27 Nov 2026 this was Outcrop, Foxtrail, Ash Pine;
+    // script.js moves saved ticks over (camoOrder 2).
     "TYPE 73": [
+        ["ASH PINE", ch("20 mounted kills", "75 mounted kills")],
         ["OUTCROP", ch("10 double kills", "30 double kills")],
-        ["FOXTRAIL", ch("40 headshots", "100 headshots")],
-        ["ASH PINE", ch("20 mounted kills", "75 mounted kills")]
+        ["FOXTRAIL", ch("40 headshots", "100 headshots")]
     ],
     "APOC-338": [
         ["PHANTOM FLUX", ch("20 hipfire kills", "75 hipfire kills")],
@@ -354,13 +423,15 @@ const specialCamos = {
 };
 
 const buildSpecial = (gun) => Array.from({ length: 3 }, (_, i) => {
-    const [name, challenge, unlock] = (specialCamos[gun] || [])[i] || [];
+    const [name, challenge] = (specialCamos[gun] || [])[i] || [];
+    const level = (specialLevels[gun] || [])[i];
     return {
         id: `sp${i + 1}`,
         name: name || `SPECIAL ${i + 1}`,
         modes: ["mp", "dmz"],
         challenge: challenge || { mp: "", dmz: "" },
-        unlock: unlock || (name ? "" : "Not published yet for this weapon"),
+        unlock: !name ? "Not published yet for this weapon"
+            : level ? `Opens at weapon level ${level}` : "Unlock level not confirmed yet",
         section: "SPECIAL"
     };
 });

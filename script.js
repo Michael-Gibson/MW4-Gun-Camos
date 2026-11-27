@@ -93,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // SAVED STATE (one localStorage key, separate from the BO7 app)
     // =========================
     const STORAGE_KEY = 'mw4-tracker-v1';
+    const CAMO_ORDER = 2; // 2 = Type 73 Specials in in-game order (Ash Pine, Outcrop, Foxtrail)
 
     // Materials tracker: { craftFor, custom: [{ name, rarity }] added in the app, tracked: [{ name, have, need }] }
     const toCount = (v) => Math.max(0, Math.floor(Number(v) || 0));
@@ -148,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
         camos: {},   // camos[mode][gun] = { [camoKey]: true }
         mastery: {}, // mastery[camoId] = { done, progress }
         divergence: false, // Divergence is account-wide: one flag for every weapon
+        camoOrder: CAMO_ORDER, // camo order the save uses (see the Type 73 migration below)
         dmz: {},     // dmz[gun] = { manuals: 0-3, blueprints: [{ name, claimed, rarity }] }
         gear: [],    // 3D Printer recipes: [{ category, name, rarity, obtained }]
         seededRecipes: [], // starter recipes already added once (so deleted ones stay deleted)
@@ -183,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mastery: parsed.mastery && typeof parsed.mastery === 'object' ? normMastery(parsed.mastery) : null,
                 // null = a save from when Divergence was ticked per weapon: converted below
                 divergence: typeof parsed.divergence === 'boolean' ? parsed.divergence : null,
+                camoOrder: Number(parsed.camoOrder) || 1, // saves from before 27 Nov 2026 have none
                 dmz: parsed.dmz || {},
                 gear: Array.isArray(parsed.gear) ? parsed.gear : [],
                 seededRecipes: Array.isArray(parsed.seededRecipes) ? parsed.seededRecipes : [],
@@ -225,6 +228,21 @@ document.addEventListener('DOMContentLoaded', () => {
             migrated = true;
         });
     });
+
+    // The Type 73 Specials used to be listed as Outcrop, Foxtrail, Ash Pine (sp1-sp3). The
+    // in-game order is Ash Pine, Outcrop, Foxtrail, so move saved ticks to stay with their camo.
+    if (state.camoOrder < 2) {
+        const t73 = state.camos.track && state.camos.track['TYPE 73'];
+        if (t73 && typeof t73 === 'object') {
+            const [outcrop, foxtrail, ashPine] = [t73.sp1, t73.sp2, t73.sp3];
+            delete t73.sp1; delete t73.sp2; delete t73.sp3;
+            if (ashPine) t73.sp1 = true;
+            if (outcrop) t73.sp2 = true;
+            if (foxtrail) t73.sp3 = true;
+        }
+        state.camoOrder = 2;
+        migrated = true;
+    }
 
     // Recipes logged before the checklist existed were things you already had: mark them
     // obtained, and move old category names onto the 3D Printer categories.

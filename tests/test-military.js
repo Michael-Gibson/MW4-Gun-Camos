@@ -14,7 +14,7 @@ const KEY = 'mw4-tracker-v1';
 // Kept here on purpose, separate from mw4-data.js, so a wrong edit to the data is caught.
 const EXPECTED = {
     'HAN 86': [10, 18, 25, 34, 42, 50, 57, 65],
-    'M4': [10, 18, 26, 35, 39, 44, 51, 59],
+    'M4': [10, 18, 26, 35, 44, 51, 59, 64], // 5-8 from codcentral.net (owner's pick, 27 Nov 2026)
     'KASTOV 762': [10, 19, 27, 37, 45, 54, 61, 67],
     'AXION': [10, 19, 26, 34, 41, 48, 55, 62],
     'CRONEN SQUALL': [10, 17, 24, 31, 39, 45, 54, 60],
@@ -110,7 +110,7 @@ const check = (label, ok, detail = '') => {
     await open({ ui: { mode: 'track', view: 'detail', gun: 'M4', trackMode: 'mp' } });
     let rows = await militaryTexts();
     check('M4 Military 1 = level 10 (matches the game)', rows[0][1] === 'Reach weapon level 10');
-    check('M4 Military 8 = level 59', rows[7][1] === 'Reach weapon level 59');
+    check('M4 Military 5-8 = 44, 51, 59, 64 (was 39, 44, 51, 59)', [44, 51, 59, 64].every((lv, i) => rows[i + 4][1] === `Reach weapon level ${lv}`));
     await page.screenshot({ path: path.join(outDir, 'military-m4.png') });
     await open({ ui: { mode: 'track', view: 'detail', gun: 'X-58 NYX', trackMode: 'dmz' } });
     rows = await militaryTexts();
