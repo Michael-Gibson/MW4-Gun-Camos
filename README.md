@@ -34,8 +34,8 @@ The weapon list on the left is grouped by class and searchable. Each weapon is c
 ### DMZ Loadout
 
 - **Weapons & Manuals:** mark which weapons are unlocked at the Gunsmith (click a card's **LOCKED / ✓ GUNSMITH** button) and, separately, how many Weapon Manuals you've extracted toward the *War Spoils* camo (click the diamonds, 3 needed), plus per-weapon blueprints. Click anywhere else on a card to open that weapon; **← All weapons** takes you back to the same spot in the list. The overview works well on a second monitor.
-- **Blueprints & Recipes:** a checklist of 3D Printer recipes grouped like the in-game menu, with rarity tags and tiered upgrades (I, II, III…).
-- **Notes & Materials:** a notepad (left) next to your shopping list (right). Pick the items you're crafting, or click base resources and ingredients, in the section below, and the shopping list fills in the materials you need with have/need counts. Long lists scroll inside the shopping list so the notepad stays beside it; on narrow screens the two stack. A message pops up in the top right corner whenever something is added to or removed from the list (click it to jump up to the list).
+- **Blueprints & Recipes:** a checklist of 3D Printer recipes grouped like the in-game menu, with rarity tags.
+- **Notes & Materials:** a notepad (left) next to your shopping list (right). Pick the items you're crafting, or click base resources and ingredients, in the section below, and the shopping list fills in the materials you need with have/need counts, sorted rarest first (Ultra at the top, base resources at the bottom). Long lists scroll inside the shopping list so the notepad stays beside it; on narrow screens the two stack. A message pops up in the top right corner whenever something is added to or removed from the list (click it to jump up to the list). Below that, **3D Printer Upgrades** shows every upgrade with its tier (I, II, III…) and the cash and materials the next tier needs, including raid items like intel documents and Gold Bars, kept separate from the shopping list. Press **+** when you build a tier.
 
 ### Challenges
 
@@ -65,6 +65,7 @@ All game data is in [`mw4-data.js`](mw4-data.js), and the app logic in [`script.
 | Mastery and Prestige camos | `modeCamos` |
 | 3D Printer categories and recipes | `dmzSettings.recipeCategories`, `recipeCatalog` and `upgradeCatalog` (bump `catalogVersion` after changing rarity or obtained flags on existing items) |
 | Materials and crafting costs | `dmzSettings.materialCatalog` and `craftingRecipes` (add a `materialRenames` entry when you rename a material) |
+| 3D Printer upgrade costs per tier | `dmzSettings.upgradeCosts` (cash, items, what the tier gives, and an optional `verify` note) |
 | Challenge quick-start buttons | `dmzSettings.challengeTemplates` |
 
 Tier and rarity colors are defined in [`styles.css`](styles.css) under **TIER COLORS** and **RARITY COLORS**.
@@ -73,7 +74,7 @@ Tier and rarity colors are defined in [`styles.css`](styles.css) under **TIER CO
 
 ### Data accuracy
 
-Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Season 1 weapons (Cronen Osprey, CSG-35) come from community guides published after they released. Some weapons don't have published Military unlock levels yet, and the JAK 12 and ZLR Talonhawk Special camos haven't been revealed (both are upcoming in-season event rewards). Check entries against the game and update `mw4-data.js` as needed.
+Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Season 1 weapons (Cronen Osprey, CSG-35) come from community guides published after they released. Some weapons don't have published Military unlock levels yet, and the JAK 12 and ZLR Talonhawk Special camos haven't been revealed (both are upcoming in-season event rewards). 3D Printer upgrade costs come from community sites (Nov 2026); several later tiers are community-reported or have no confirmed cash cost, and those show a ⚠ note or "$ ?" in the app. MIA Recovery IV and Vendor Item II still have no confirmed cash cost. Check entries against the game and update `mw4-data.js` as needed.
 
 ## Project structure
 
@@ -90,6 +91,11 @@ Newest first. Your saved progress carries over through every change listed here.
 
 ### 2026-11-27
 
+- **Shopping list sorted by rarity:** material rows are listed rarest first (Ultra → Legendary → Epic → Rare → Uncommon → Common), with base resources (no rarity) at the bottom. Materials of the same rarity stay in the order they were added. The list re-sorts itself as you add items.
+- **"Crafting for" items sorted by rarity** the same way (e.g. Tempered Armor Vest before Medkit).
+- **3D Printer upgrades moved to Notes & Materials, with costs:** a new **3D Printer Upgrades** section (between the notepad/shopping list and the pickers) shows all 9 upgrades. Each card has its tier boxes, the next tier to build, what that tier gives, and its cost: cash plus every material in its rarity color. Raid items that aren't printer ingredients (intel documents, Gold Bar, Gold Skull, DRC lockers) are marked **RAID**, and printable items (Fulton Drop Marker, Door Breacher Charge) are marked **CRAFT**. Tiers paid only in items say **NO CASH**, unconfirmed cash shows as "$ ?", and uncertain tiers have a ⚠ note. Upgrades in progress are listed first, maxed ones (gold) last. The −/+/Maxed controls moved here too; nothing here touches the shopping list.
+- **Blueprints & Recipes** no longer shows upgrades (or the "Upgrades maxed" stat or the UPGRADES add option). Your saved tiers carry over, and any upgrade missing from an older save is added at tier 0.
+- New `upgradeCosts` table in `mw4-data.js` with every tier's cost for Dog Tag Case (4 tiers), Stash Item (4), Stash Weapon (3), MIA Recovery Discount (4), Gunsmith (2), Vendor Item (2), Bank (13, up to a $2,000,000,000 cap) and Uncommon/Epic Ingredient Printing (1 each), cross-checked across seven community sites.
 - **Notes & Materials layout:** the notepad now takes the left half of the top row, with a new **Shopping List** on the right half. The shopping list holds the "Crafting for" items, Reset counts / Clear list, the READY counter and the material rows. The item picker, base resources, ingredients and "Material not listed?" box moved to a full-width **Add to the shopping list** section underneath.
 - The notepad stretches to match the shopping list's height. Long shopping lists scroll inside their own box (keeping their scroll spot when the list updates). On narrower windows each material row switches to two lines; on phone-sized screens the notepad and list stack.
 - **Shopping list messages:** picking or un-picking an item, clicking a material chip, or adding your own material shows a short message in the top right corner ("✓ Added to shopping list" in green, "Removed from shopping list" in amber, or "Already on the shopping list"), with the item's name in its rarity color and, for crafted items, what they need. Messages fade after 3 seconds (at most 3 at once); clicking one scrolls up to the shopping list.

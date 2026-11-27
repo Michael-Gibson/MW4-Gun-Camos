@@ -629,6 +629,73 @@ const dmzSettings = {
         { name: "Epic Ingredient Printing", built: 2, maxed: true }
     ],
 
+    // What each 3D Printer upgrade tier costs. Shown on NOTES & MATERIALS next to the
+    // tier you're on. One entry per tier, in order (tier I first):
+    //   cash   - $ cost, 0 if it costs no cash, or null if no site has confirmed it
+    //   items  - { "Item": amount }. Printer ingredients use the materialCatalog names and
+    //            craftable items the recipeCatalog names; anything else (intel documents,
+    //            Gold Bar/Skull, DRC lockers) shows as a raid item.
+    //   gives  - what the tier does
+    //   verify - optional note when sites disagree or only one site lists the tier
+    // Upgrade names must match upgradeCatalog. Sources (Nov 2026): dmzmap.com/upgrades
+    // (updated 26 Nov), codcentral.net, dmzcodex.com, dmztracker.gg, nomaddmzhub.com,
+    // metaradar.gg, fanboydestroy.com. Many later tiers are community-reported: check the
+    // printer in game.
+    upgradeCosts: {
+        "Dog Tag Case Upgrade": [
+            { cash: 10000, items: { "Rigid Synthetics": 10, "Biomaterials": 10 }, gives: "+20 dog tag slots" },
+            { cash: 50000, items: { "Detonators": 20, "Nylon Cloth": 10, "Power Regulator": 5 }, gives: "+20 dog tag slots" },
+            { cash: 100000, items: { "Printed Circuit Board": 10, "Structural Alloy": 10, "Power Regulator": 5 }, gives: "+20 dog tag slots" },
+            { cash: 200000, items: { "CPU": 20, "Stabilized Reagents": 10, "Experimental Compounds": 5 }, gives: "+20 dog tag slots" }
+        ],
+        "Stash Item Upgrade": [
+            { cash: 10000, items: { "Rigid Synthetics": 10, "Electronic Sensors": 10 }, gives: "+18 item slots" },
+            { cash: 50000, items: { "Detonators": 20, "Nylon Cloth": 10, "Power Regulator": 5 }, gives: "More item slots", verify: "Slot count not confirmed" },
+            { cash: 100000, items: { "Binding Catalyst": 20, "Stock Rod": 20, "Alloyed Plating": 10 }, gives: "+18 item slots" },
+            { cash: 0, items: { "Gold Skull": 5, "Alloyed Plating": 30, "Turned Components": 30, "Experimental Compounds": 10 }, gives: "+18 item slots", verify: "No cash per one site; others don't list cash" }
+        ],
+        "Stash Weapon Upgrade": [
+            { cash: 50000, items: { "Reactive Metals": 20, "Stock Rod": 10, "Comms Module": 5 }, gives: "+6 weapon slots" },
+            { cash: 100000, items: { "Structural Alloy": 20, "High-Tenacity Fibers": 20, "Turned Components": 10 }, gives: "+6 weapon slots" },
+            { cash: 0, items: { "Gold Bar": 5, "Stabilized Reagents": 30, "Volatile Explosives": 30, "Nano-Structured Alloy": 10 }, gives: "+6 weapon slots", verify: "No cash per one site; others don't list cash" }
+        ],
+        "MIA Recovery Discount": [
+            { cash: 0, items: { "Regional Combat Notes": 5, "Control Unit": 10, "Rigid Synthetics": 10 }, gives: "Rescues 5% cheaper" },
+            { cash: 0, items: { "Nuclear Program Files": 5, "Degraded Execution Footage": 5, "Binding Catalyst": 10, "Nitro Compounds": 10 }, gives: "Rescues 5% cheaper", verify: "No cash per one site; others don't list cash" },
+            { cash: 0, items: { "W.M.D. Manifest": 5, "Foreign Intelligence Targets": 5, "Power Regulator": 10, "Comms Module": 10 }, gives: "Rescues 5% cheaper", verify: "No cash per one site; others don't list cash" },
+            { cash: null, items: { "Sanctioned Assassination List": 5, "Ballistic Fabric": 30, "Nylon Laminate": 30, "Prototype RF Module": 10 }, gives: "Rescues 5% cheaper" }
+        ],
+        "Gunsmith Upgrade": [
+            { cash: 50000, items: { "Reactive Metals": 20, "CPU": 10, "Power Regulator": 5 }, gives: "Gunsmith 5% cheaper" },
+            { cash: 100000, items: { "Nitro Compounds": 20, "Comms Module": 10, "Military Composites": 10 }, gives: "Gunsmith 5% cheaper" }
+        ],
+        "Vendor Item Upgrade": [
+            { cash: 0, items: { "Electronic Sensors": 20, "CPU": 10, "Printed Circuit Board": 10, "Prototype RF Module": 2 }, gives: "More items for sale", verify: "No cash per one site; others don't list cash" },
+            { cash: null, items: { "Control Unit": 20, "High-Tenacity Fibers": 10, "Nylon Cloth": 10, "Nano-Structured Alloy": 2 }, gives: "More items for sale" }
+        ],
+        "Bank Upgrade": [
+            { cash: 20000, items: {}, gives: "Bank holds $250,000" },
+            { cash: 50000, items: {}, gives: "Bank holds $500,000" },
+            { cash: 100000, items: { "Infantry Invasion Plans": 5 }, gives: "Bank holds $1,000,000" },
+            { cash: 200000, items: { "Ballistic Flight Logs": 5, "Regional Combat Notes": 5 }, gives: "Bank holds $2,000,000" },
+            { cash: 500000, items: { "Degraded Execution Footage": 10 }, gives: "Bank holds $5,000,000" },
+            { cash: 500000, items: { "Nuclear Program Files": 10, "Encrypted Archive": 10 }, gives: "Bank holds $10,000,000" },
+            { cash: 500000, items: { "W.M.D. Manifest": 10 }, gives: "Bank holds $25,000,000" },
+            { cash: 500000, items: { "Foreign Intelligence Targets": 10, "Cipher Code Ledger": 10 }, gives: "Bank holds $50,000,000", verify: "Community-reported (3 sites)" },
+            { cash: 500000, items: { "Sanctioned Assassination List": 10 }, gives: "Bank holds $100,000,000", verify: "Community-reported (3 sites)" },
+            { cash: 500000, items: { "Gold Bar": 10 }, gives: "Bank holds $250,000,000", verify: "Community-reported (2 sites)" },
+            { cash: 500000, items: { "Gold Skull": 10 }, gives: "Bank holds $500,000,000", verify: "Community-reported (2 sites)" },
+            { cash: null, items: { "Gold Bar": 20, "Gold Skull": 20, "Irradiated Container": 3, "Fulton Drop Marker": 3 }, gives: "Bank holds $1,000,000,000", verify: "Only one site lists this tier" },
+            { cash: null, items: { "Reactor DRC Locker": 1, "Shopping DRC Locker": 1, "Air Base DRC Weapons Locker": 1, "Door Breacher Charge": 5 }, gives: "Bank holds $2,000,000,000", verify: "Only one site lists this tier" }
+        ],
+        "Uncommon Ingredient Printing": [
+            { cash: 50000, items: { "Biomaterials": 20, "High-Tenacity Fibers": 10, "Comms Module": 5 }, gives: "Print Uncommon ingredients" }
+        ],
+        "Epic Ingredient Printing": [
+            { cash: 100000, items: { "Binding Catalyst": 10, "Printed Circuit Board": 10, "Military Composites": 5 }, gives: "Print Epic ingredients" }
+        ]
+    },
+
     // Optional rarity tag for any blueprint. Colors are in styles.css under "RARITY COLORS".
     rarities: [
         { id: "common", label: "COMMON" },

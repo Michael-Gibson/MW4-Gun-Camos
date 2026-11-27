@@ -1535,6 +1535,124 @@ button.toast:hover .toast-view { color: var(--accent); }
     .shop-section .mat-progress { grid-area: bar; }
 }
 
+/* ----- 3D Printer upgrades with costs (Notes & Materials) ----- */
+.upgrades-section { margin-top: 12px; }
+.upgrades-section .panel-hint { margin: 0 0 10px; }
+
+.upgrade-cost-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 10px;
+}
+
+.upgrade-cost-card { gap: 8px; padding: 10px 12px; }
+.upgrade-cost-card .bp-card-bottom { margin-top: auto; } /* line up the controls along each row */
+
+/* The tier you're on and what it costs */
+.upg-cost {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+}
+
+.upg-cost.done { background: transparent; border-style: dashed; }
+
+.upg-cost-head-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.upg-cost-head {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+}
+
+.upgrade-card.maxed .upg-cost-head { color: #ffe7a6; }
+
+.upg-gives {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+}
+
+.upg-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.upg-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 3px 8px;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--r, var(--text));
+    background: var(--r-bg, var(--panel-3));
+    border: 1px solid color-mix(in srgb, var(--r, var(--line-strong)) 55%, transparent);
+    border-radius: 5px;
+}
+
+.upg-qty { color: var(--text); font-variant-numeric: tabular-nums; }
+
+.upg-cash {
+    color: #b9f08f;
+    background: #18301a;
+    border-color: var(--accent-dim);
+}
+
+.upg-cash.unknown {
+    color: var(--text-faint);
+    background: transparent;
+    border-style: dashed;
+    border-color: var(--line-strong);
+}
+
+.upg-cash.none {
+    color: var(--text-dim);
+    background: transparent;
+    border-color: var(--line-strong);
+}
+
+/* Items you print yourself (e.g. Fulton Drop Marker): rarity color + CRAFT tag */
+.upg-chip.craft { border-style: solid; }
+.upg-chip.craft .upg-tag { color: var(--r, var(--text-dim)); opacity: 0.85; }
+
+/* Raid items (intel documents, Gold Bar/Skull): not printer ingredients */
+.upg-chip.raid {
+    color: #e8e2d0;
+    background: #2a2620;
+    border: 1px dashed #8a7d5c;
+}
+
+.upg-tag {
+    font-family: var(--font-body);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #c9b98a;
+}
+
+.upg-unknown,
+.upg-verify {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--text-faint);
+}
+
+.upg-verify { color: var(--amber); }
+
 .pick-section { margin-top: 12px; }
 .pick-section .craft-picker { margin-top: 0; }
 .pick-section .mat-picker { margin-top: 10px; }

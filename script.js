@@ -296,6 +296,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ]));
 
+    // 3D Printer upgrade costs from mw4-data.js, keyed by upper-case upgrade name:
+    // upgradeCostTable[UPGRADE] = [{ cash, items: { ITEM: amount }, gives, verify }, ...] (index 0 = tier I)
+    const upgradeCostTable = Object.fromEntries(Object.entries(dmzSettings.upgradeCosts || {}).map(([name, tiers]) => [
+        upgradeKey(name),
+        (tiers || []).map(t => ({
+            cash: typeof t.cash === 'number' ? t.cash : null,
+            items: Object.fromEntries(Object.entries(t.items || {}).map(([m, n]) => [m.trim().toUpperCase(), toCount(n)])),
+            gives: t.gives || '',
+            verify: t.verify || ''
+        }))
+    ]));
+    // Every upgrade with known costs shows on the Notes & Materials page, even if it isn't in your list yet
+    Object.keys(upgradeCostTable).forEach(base => {
+        if (findUpgrade(base)) return;
+        state.upgrades.push({ name: base, built: 0, maxed: false });
+        migrated = true;
+    });
+
     // The old free-text "Crafting for" box becomes a picked item when it names a known recipe
     // (anything else is kept at the end of the notepad so it isn't lost).
     if (state.materials.craftFor.trim()) {
@@ -1064,21 +1082,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =========================
-    // RIGHT PANEL: BLUEPRINTS & RECIPES (3D Printer upgrades + recipe checklist)
+    // RIGHT PANEL: BLUEPRINTS & RECIPES (3D Printer recipe checklist)
     // =========================
+    // (3D Printer upgrades live on NOTES & MATERIALS, next to their material costs.)
     const renderBlueprintsView = () => {
         const keepScroll = rightPanel.scrollTop;
         rightPanel.innerHTML = '';
         const rerender = () => renderBlueprintsView();
 
         const header = buildDmzHeader();
-        header.appendChild(el('p', 'panel-subtitle', 'Add the recipes you want, then check them off when you get them.'));
+        header.appendChild(el('p', 'panel-subtitle', 'Add the recipes you want, then check them off when you get them. 3D Printer upgrades are on Notes & Materials.'));
         rightPanel.appendChild(header);
 
         const obtainedCount = state.gear.filter(g => g.obtained).length;
-        const maxedCount = state.upgrades.filter(isMaxed).length;
         rightPanel.appendChild(buildStatCards([
-            ['Upgrades maxed', `${maxedCount}/${state.upgrades.length}`],
             ['Recipes obtained', `${obtainedCount}/${state.gear.length}`],
             ['Still need', `${state.gear.length - obtainedCount}`]
         ]));
@@ -1086,11 +1103,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // ----- Add form -----
         const form = el('form', 'bp-add-form');
         const typeSelect = el('select', 'text-input select-input');
-        typeSelect.appendChild(new Option('UPGRADES', UPGRADE_TYPE));
         recipeCategories.forEach(cat => typeSelect.appendChild(new Option(cat, cat)));
         // Weapon blueprints are logged per gun under WEAPONS & MANUALS
-        const validTypes = [UPGRADE_TYPE, ...recipeCategories];
-        typeSelect.value = validTypes.includes(state.ui.bpType) ? state.ui.bpType : UPGRADE_TYPE;
+        typeSelect.value = recipeCategories.includes(state.ui.bpType) ? state.ui.bpType : (recipeCategories[0] || '');
 
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
@@ -1101,18 +1116,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const addBtn = el('button', 'toggle-button small', 'Add');
         addBtn.type = 'submit';
 
-        const syncForm = () => {
-            const isUpgrade = typeSelect.value === UPGRADE_TYPE;
-            raritySelect.hidden = isUpgrade;
-            nameInput.placeholder = isUpgrade ? 'Upgrade name as shown in game (e.g. Armory Upgrade II)'
-                : 'Recipe name (e.g. Medkit)';
-        };
+        nameInput.placeholder = 'Recipe name (e.g. Medkit)';
         typeSelect.addEventListener('change', () => {
             state.ui.bpType = typeSelect.value;
             saveState();
-            syncForm();
         });
-        syncForm();
 
         [typeSelect, nameInput, raritySelect, addBtn].forEach(n => form.appendChild(n));
         form.addEventListener('submit', (e) => {
@@ -1123,22 +1131,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const rarity = raritySelect.value || '';
-            if (typeSelect.value === UPGRADE_TYPE) {
-                // The numeral shown in game is the next tier to build
-                const { base, tier } = splitTier(name);
-                if (findUpgrade(base)) {
-                    window.alert(`"${base}" is already in your Upgrades. Use its + / - buttons to change the tier.`);
-                    return;
-                }
-                state.upgrades.push({ name: base, built: tier ? tier - 1 : 0, maxed: false });
-            } else {
-                const dupe = state.gear.find(g => recipeId(g.category, g.name) === recipeId(typeSelect.value, name));
-                if (dupe) {
-                    window.alert(`"${name}" is already on your ${typeSelect.value} list.`);
-                    return;
-                }
-                state.gear.push({ category: typeSelect.value, name, rarity, obtained: false });
+            const dupe = state.gear.find(g => recipeId(g.category, g.name) === recipeId(typeSelect.value, name));
+            if (dupe) {
+                window.alert(`"${name}" is already on your ${typeSelect.value} list.`);
+                return;
             }
+            state.gear.push({ category: typeSelect.value, name, rarity, obtained: false });
             saveState();
             rerender();
             const next = rightPanel.querySelector('.bp-add-form input[type="text"]');
@@ -1162,102 +1160,6 @@ document.addEventListener('DOMContentLoaded', () => {
         rightPanel.appendChild(filterRow);
 
         const matchesFilter = (obtained) => filter === 'all' || (filter === 'need' ? !obtained : obtained);
-
-        // ----- 3D Printer upgrades (tracked by tier) -----
-        {
-            const all = state.upgrades.map((u, index) => ({ u, index }));
-            const maxedAll = all.filter(x => isMaxed(x.u)).length;
-            const shown = all.filter(x => matchesFilter(isMaxed(x.u)));
-
-            const heading = el('h3', 'camo-section recipe-heading', 'UPGRADES');
-            heading.appendChild(el('span', `recipe-count${all.length && maxedAll === all.length ? ' complete' : ''}`, `${maxedAll}/${all.length} MAXED`));
-            rightPanel.appendChild(heading);
-
-            if (!shown.length) {
-                let msg = 'Nothing added yet.';
-                if (all.length && filter === 'need') msg = 'All maxed.';
-                else if (all.length && filter === 'obtained') msg = 'None maxed yet.';
-                rightPanel.appendChild(el('p', 'bp-empty', msg));
-            } else {
-                const grid = el('div', 'bp-grid upgrade-grid');
-                shown.forEach(({ u, index }) => {
-                    const maxed = isMaxed(u);
-                    const card = el('div', `bp-card upgrade-card${maxed ? ' maxed' : ''}`);
-
-                    const top = el('div', 'bp-card-top');
-                    top.appendChild(el('span', 'bp-card-name', u.name));
-                    top.appendChild(buildRemoveButton(u.name, () => {
-                        state.upgrades.splice(index, 1);
-                    }, rerender));
-                    card.appendChild(top);
-
-                    // Tier boxes: built tiers filled, the next tier dashed
-                    const boxes = el('div', 'tier-boxes');
-                    const lastShown = maxed ? u.built : Math.max(u.built + 1, u.maxTier || 0);
-                    for (let t = 1; t <= lastShown; t++) {
-                        let cls = 'tier-box';
-                        if (t <= u.built) cls += ' built';
-                        else if (t === u.built + 1) cls += ' next';
-                        boxes.appendChild(el('span', cls, toRoman(t)));
-                    }
-                    card.appendChild(boxes);
-
-                    const bottom = el('div', 'bp-card-bottom');
-                    let status;
-                    if (maxed) status = u.built ? `MAXED AT ${toRoman(u.built)}` : 'MAXED';
-                    else if (u.built === 0) status = `NEXT: ${toRoman(1)}`;
-                    else status = `NEXT: ${toRoman(u.built + 1)}`;
-                    bottom.appendChild(el('span', 'upgrade-status', status));
-
-                    const controls = el('div', 'upgrade-controls');
-                    const minus = el('button', 'step-button', '−');
-                    minus.type = 'button';
-                    minus.title = 'One tier less';
-                    minus.disabled = u.built <= 0;
-                    minus.addEventListener('click', () => {
-                        const target = state.upgrades[index];
-                        target.built = Math.max(0, target.built - 1);
-                        target.maxed = false;
-                        saveState();
-                        rerender();
-                    });
-                    const plus = el('button', 'step-button', '+');
-                    plus.type = 'button';
-                    plus.title = 'Built the next tier';
-                    plus.addEventListener('click', () => {
-                        const target = state.upgrades[index];
-                        target.built += 1;
-                        // A new tier past a known max means the game added more tiers
-                        if (target.maxTier && target.built > target.maxTier) delete target.maxTier;
-                        target.maxed = false;
-                        saveState();
-                        rerender();
-                    });
-                    const maxLabel = el('label', 'bp-card-claim');
-                    const maxCb = document.createElement('input');
-                    maxCb.type = 'checkbox';
-                    maxCb.checked = maxed;
-                    maxCb.addEventListener('change', () => {
-                        const target = state.upgrades[index];
-                        target.maxed = maxCb.checked;
-                        if (maxCb.checked && target.built < 1) target.built = 1;
-                        if (!maxCb.checked && target.maxTier && target.built >= target.maxTier) delete target.maxTier;
-                        saveState();
-                        rerender();
-                    });
-                    maxLabel.appendChild(maxCb);
-                    maxLabel.appendChild(el('span', null, 'Maxed'));
-                    controls.appendChild(minus);
-                    controls.appendChild(plus);
-                    controls.appendChild(maxLabel);
-                    bottom.appendChild(controls);
-                    card.appendChild(bottom);
-
-                    grid.appendChild(card);
-                });
-                rightPanel.appendChild(grid);
-            }
-        }
 
         // ----- 3D Printer recipes by category -----
         // Include any saved category that isn't in the settings list at the end so nothing is lost.
@@ -1400,6 +1302,172 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     window.addEventListener('beforeunload', flushNotes);
 
+    // ----- 3D Printer upgrades (shown on NOTES & MATERIALS) -----
+    // One card per upgrade: tier boxes, the tier you're on next, and what that tier costs.
+    // Kept apart from the shopping list because some costs are raid items (intel, Gold Bars).
+    const formatCash = (n) => `$${n.toLocaleString('en-US')}`;
+
+    const buildUpgradesSection = (rarityOf, rerender) => {
+        // Items you make at the 3D Printer (e.g. Fulton Drop Marker), with their rarity
+        const craftableRarity = {};
+        Object.values(dmzSettings.recipeCatalog || {}).forEach(list => (list || []).forEach(it => {
+            craftableRarity[matKey(it.name)] = it.rarity || '';
+        }));
+        state.gear.forEach(g => {
+            const key = matKey(g.name);
+            if (!(key in craftableRarity) || g.rarity) craftableRarity[key] = g.rarity || '';
+        });
+
+        const section = el('div', 'dmz-section upgrades-section');
+        const all = state.upgrades;
+        const maxedCount = all.filter(isMaxed).length;
+        const heading = el('h3', 'camo-section recipe-heading', '3D PRINTER UPGRADES');
+        heading.appendChild(el('span', `recipe-count${all.length && maxedCount === all.length ? ' complete' : ''}`,
+            `${maxedCount}/${all.length} MAXED`));
+        section.appendChild(heading);
+        section.appendChild(el('p', 'panel-hint',
+            'What the next tier of each upgrade costs. Press + when you build a tier. Not part of the shopping list.'));
+
+        if (!all.length) {
+            section.appendChild(el('p', 'bp-empty', 'No upgrades yet.'));
+            return section;
+        }
+
+        const grid = el('div', 'upgrade-cost-grid');
+        // Upgrades still in progress first, maxed ones at the end (otherwise in list order)
+        [...all].sort((a, b) => Number(isMaxed(a)) - Number(isMaxed(b))).forEach(u => {
+            const maxed = isMaxed(u);
+            const tiers = upgradeCostTable[upgradeKey(u.name)];
+            const nextTier = u.built + 1;
+            const cost = tiers ? tiers[u.built] : null; // tiers[0] = tier I
+            const card = el('div', `bp-card upgrade-card upgrade-cost-card${maxed ? ' maxed' : ''}`);
+
+            const top = el('div', 'bp-card-top');
+            top.appendChild(el('span', 'bp-card-name', u.name));
+            // Upgrades with cost data are always listed, so only ones you added yourself can be removed
+            if (!tiers) {
+                top.appendChild(buildRemoveButton(u.name, () => {
+                    state.upgrades.splice(state.upgrades.indexOf(u), 1);
+                }, rerender));
+            }
+            card.appendChild(top);
+
+            // Tier boxes: built tiers filled, the next tier dashed, later known tiers plain
+            const boxes = el('div', 'tier-boxes');
+            const lastShown = maxed ? u.built : Math.max(nextTier, u.maxTier || 0, tiers ? tiers.length : 0);
+            for (let t = 1; t <= lastShown; t++) {
+                let cls = 'tier-box';
+                if (t <= u.built) cls += ' built';
+                else if (t === nextTier) cls += ' next';
+                boxes.appendChild(el('span', cls, toRoman(t)));
+            }
+            card.appendChild(boxes);
+
+            // What the tier you're on costs
+            const costBox = el('div', 'upg-cost');
+            if (maxed) {
+                costBox.classList.add('done');
+                costBox.appendChild(el('span', 'upg-cost-head', u.built ? `MAXED AT ${toRoman(u.built)}` : 'MAXED'));
+            } else if (!cost) {
+                costBox.appendChild(el('span', 'upg-cost-head', `NEXT: TIER ${toRoman(nextTier)}`));
+                costBox.appendChild(el('p', 'upg-unknown', tiers
+                    ? `Tier ${toRoman(nextTier)} costs aren't known yet. If the game shows this upgrade as maxed, tick Maxed.`
+                    : 'No cost data for this upgrade yet (add it under upgradeCosts in mw4-data.js).'));
+            } else {
+                const head = el('div', 'upg-cost-head-row');
+                head.appendChild(el('span', 'upg-cost-head', `NEXT: TIER ${toRoman(nextTier)}`));
+                if (cost.gives) head.appendChild(el('span', 'upg-gives', cost.gives));
+                costBox.appendChild(head);
+
+                const items = el('div', 'upg-items');
+                let cashText = formatCash(cost.cash || 0);
+                let cashClass = '';
+                let cashTitle = 'DMZ cash';
+                if (cost.cash === null) {
+                    cashText = '$ ?';
+                    cashClass = ' unknown';
+                    cashTitle = 'Cash cost not confirmed';
+                } else if (cost.cash === 0) {
+                    cashText = 'NO CASH';
+                    cashClass = ' none';
+                    cashTitle = 'This tier costs no cash, only items';
+                }
+                const cash = el('span', `upg-chip upg-cash${cashClass}`, cashText);
+                cash.title = cashTitle;
+                items.appendChild(cash);
+                Object.entries(cost.items).forEach(([name, n]) => {
+                    // Ingredients/base resources (rarity color), printable items (CRAFT), or raid finds (RAID)
+                    const isMaterial = Object.prototype.hasOwnProperty.call(rarityOf, name);
+                    const isCraft = !isMaterial && Object.prototype.hasOwnProperty.call(craftableRarity, name);
+                    let cls = ' raid';
+                    if (isMaterial) cls = rarityClass(rarityOf[name]);
+                    else if (isCraft) cls = ` craft${rarityClass(craftableRarity[name])}`;
+                    const chip = el('span', `upg-chip${cls}`);
+                    chip.appendChild(el('span', 'upg-qty', `${n}×`));
+                    chip.appendChild(el('span', 'upg-name', name));
+                    if (isCraft) {
+                        chip.appendChild(el('span', 'upg-tag', 'CRAFT'));
+                        chip.title = 'Made at the 3D Printer';
+                    } else if (!isMaterial) {
+                        chip.appendChild(el('span', 'upg-tag', 'RAID'));
+                        chip.title = 'Found in raids (not a printer ingredient)';
+                    } else if (rarityOf[name]) chip.title = rarityLabel[rarityOf[name]] || rarityOf[name].toUpperCase();
+                    items.appendChild(chip);
+                });
+                costBox.appendChild(items);
+                if (cost.verify) costBox.appendChild(el('p', 'upg-verify', `⚠ ${cost.verify}`));
+            }
+            card.appendChild(costBox);
+
+            // Tier controls (same as the old Blueprints page)
+            const bottom = el('div', 'bp-card-bottom');
+            const known = tiers ? Math.max(tiers.length, u.built) : 0;
+            bottom.appendChild(el('span', 'upgrade-status', known ? `${u.built} OF ${known} BUILT` : `${u.built} BUILT`));
+            const controls = el('div', 'upgrade-controls');
+            const minus = el('button', 'step-button', '−');
+            minus.type = 'button';
+            minus.title = 'One tier less';
+            minus.disabled = u.built <= 0;
+            minus.addEventListener('click', () => {
+                u.built = Math.max(0, u.built - 1);
+                u.maxed = false;
+                saveState();
+                rerender();
+            });
+            const plus = el('button', 'step-button', '+');
+            plus.type = 'button';
+            plus.title = 'Built the next tier';
+            plus.addEventListener('click', () => {
+                u.built += 1;
+                // A new tier past a known max means the game added more tiers
+                if (u.maxTier && u.built > u.maxTier) delete u.maxTier;
+                u.maxed = false;
+                saveState();
+                rerender();
+            });
+            const maxLabel = el('label', 'bp-card-claim');
+            const maxCb = document.createElement('input');
+            maxCb.type = 'checkbox';
+            maxCb.checked = maxed;
+            maxCb.addEventListener('change', () => {
+                u.maxed = maxCb.checked;
+                if (maxCb.checked && u.built < 1) u.built = 1;
+                if (!maxCb.checked && u.maxTier && u.built >= u.maxTier) delete u.maxTier;
+                saveState();
+                rerender();
+            });
+            maxLabel.appendChild(maxCb);
+            maxLabel.appendChild(el('span', null, 'Maxed'));
+            [minus, plus, maxLabel].forEach(n => controls.appendChild(n));
+            bottom.appendChild(controls);
+            card.appendChild(bottom);
+
+            grid.appendChild(card);
+        });
+        section.appendChild(grid);
+        return section;
+    };
+
     const renderNotesView = () => {
         const keepScroll = rightPanel.scrollTop;
         // The shopping list scrolls on its own too: keep its spot when the view redraws
@@ -1512,7 +1580,12 @@ document.addEventListener('DOMContentLoaded', () => {
         craftBar.appendChild(el('span', 'mat-label', 'Crafting for'));
         const picked = el('div', 'craft-picked');
         if (!mats.crafting.length) picked.appendChild(el('span', 'bp-empty', 'Nothing yet. Pick items below to build a shopping list.'));
-        mats.crafting.forEach(c => {
+        // Rarest first (Ultra -> Common, no rarity last); same rarity keeps the order picked
+        const itemRank = (name) => {
+            const i = dmzSettings.rarities.findIndex(x => x.id === (itemInfo[matKey(name)] || {}).rarity);
+            return i < 0 ? -1 : i;
+        };
+        [...mats.crafting].sort((a, b) => itemRank(b.name) - itemRank(a.name)).forEach(c => {
             const recipe = craftRecipes[matKey(c.name)];
             const pill = el('span', `craft-pill${rarityClass((itemInfo[matKey(c.name)] || {}).rarity)}`);
             pill.title = recipe ? `Each one costs: ${costText(recipe)}` : 'No recipe cost for this item yet';
@@ -1728,7 +1801,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // The rows scroll inside the shopping list once it gets long (keeps the notepad beside it).
         const list = el('div', 'mat-list shop-list');
         if (!tracked.length) list.appendChild(el('p', 'bp-empty', 'Nothing on the list yet. Pick items to craft or materials below.'));
-        tracked.forEach(t => list.appendChild(buildMatRow(t)));
+        // Rarest at the top (Ultra -> Common), then materials with no rarity (base resources).
+        // Only the display is sorted; same-rarity rows keep the order they were added.
+        const materialRank = (t) => {
+            const i = dmzSettings.rarities.findIndex(x => x.id === rarityOf[matKey(t.name)]);
+            return i < 0 ? -1 : i;
+        };
+        [...tracked]
+            .sort((a, b) => materialRank(b) - materialRank(a))
+            .forEach(t => list.appendChild(buildMatRow(t)));
         shopSection.appendChild(list);
         updateReadyPill();
 
@@ -1814,6 +1895,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         picker.appendChild(form);
         pickSection.appendChild(picker);
+        // Order: [notepad | shopping list], then 3D Printer upgrades, then the pickers
+        rightPanel.appendChild(buildUpgradesSection(rarityOf, rerender));
         rightPanel.appendChild(pickSection);
 
         rightPanel.scrollTop = keepScroll;
