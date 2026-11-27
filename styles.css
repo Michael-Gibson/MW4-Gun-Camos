@@ -796,6 +796,36 @@ button { font-family: inherit; }
 .dmz-card.dmz-unlocked { border-left-color: var(--accent); background: #142219; }
 .dmz-card.dmz-camo { border-left-color: var(--amber); background: #2b210f; }
 
+.dmz-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Gunsmith unlock toggle (weapon cards + detail page) */
+.gunsmith-toggle {
+    align-self: flex-start;
+    padding: 3px 9px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    background: transparent;
+    border: 1px dashed var(--line-strong);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.gunsmith-toggle:hover { color: var(--text); border-color: var(--accent); }
+
+.gunsmith-toggle.on {
+    color: #dff7cf;
+    background: #1f3a22;
+    border: 1px solid var(--accent);
+}
+
+.gunsmith-toggle.large {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+
 .dmz-card-top {
     display: flex;
     align-items: center;

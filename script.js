@@ -421,10 +421,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const peekDmz = (gunName) => state.dmz[gunName] || { manuals: 0, blueprints: [] };
 
+    // Gunsmith unlock is tracked on its own (entry.gunsmith), separate from the
+    // War Spoils manual counter. Older saves didn't have the flag and treated
+    // 1+ manual as unlocked, so fall back to that until the flag is set.
+    const isGunsmithUnlocked = (gunName) => {
+        const entry = peekDmz(gunName);
+        if (typeof entry.gunsmith === 'boolean') return entry.gunsmith;
+        return (entry.manuals || 0) >= 1;
+    };
+
+    const toggleGunsmith = (gunName) => {
+        const entry = getDmz(gunName);
+        entry.gunsmith = !isGunsmithUnlocked(gunName);
+        saveState();
+    };
+
     const getDmzStatus = (gunName) => {
         const manuals = peekDmz(gunName).manuals || 0;
         if (manuals >= dmzSettings.manualsForCamo) return 'dmz-camo';
-        if (manuals >= 1) return 'dmz-unlocked';
+        if (isGunsmithUnlocked(gunName)) return 'dmz-unlocked';
         return 'dmz-locked';
     };
 
@@ -720,7 +735,7 @@ document.addEventListener('DOMContentLoaded', () => {
         legendEl.innerHTML = '';
         if (state.ui.mode === LOADOUT_MODE) {
             [
-                ['dmz-locked', 'No manual yet'],
+                ['dmz-locked', 'Locked at Gunsmith'],
                 ['dmz-unlocked', 'Unlocked at Gunsmith'],
                 ['dmz-camo', `${dmzSettings.manualsForCamo} manuals: ${dmzSettings.lootCamoName}`]
             ].forEach(([cls, label]) => {
@@ -908,6 +923,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return wrap;
     };
 
+    // Gunsmith unlock toggle. `large` is the bigger version used on the weapon detail page.
+    const buildGunsmithToggle = (gunName, onChange, large = false) => {
+        const unlocked = isGunsmithUnlocked(gunName);
+        const btn = el('button', `gunsmith-toggle${unlocked ? ' on' : ''}${large ? ' large' : ''}`,
+            unlocked ? '✓ GUNSMITH' : 'LOCKED');
+        btn.type = 'button';
+        btn.setAttribute('aria-pressed', String(unlocked));
+        btn.title = unlocked ? 'Unlocked at the Gunsmith. Click to mark as locked.' : 'Click to mark as unlocked at the Gunsmith';
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleGunsmith(gunName);
+            onChange();
+        });
+        return btn;
+    };
+
     const buildStatCards = (items) => {
         const cards = el('div', 'stat-cards');
         items.forEach(([label, value]) => {
@@ -966,7 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderDmzOverview = () => {
         rightPanel.innerHTML = '';
         const header = buildDmzHeader();
-        header.appendChild(el('p', 'panel-subtitle', 'Manuals extracted per weapon. Click a weapon to edit.'));
+        header.appendChild(el('p', 'panel-subtitle', `Gunsmith unlocks and ${dmzSettings.lootCamoName} manuals per weapon. Click LOCKED / GUNSMITH to toggle, or a weapon to edit.`));
         rightPanel.appendChild(header);
 
         const unlocked = allGuns.filter(g => getDmzStatus(g) !== 'dmz-locked').length;
@@ -987,14 +1018,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             guns.forEach(gunName => {
                 const dmz = peekDmz(gunName);
-                const card = el('button', `dmz-card ${getDmzStatus(gunName)}`);
-                card.type = 'button';
+                // A div (not a button) so the Gunsmith toggle button can sit inside it.
+                const card = el('div', `dmz-card ${getDmzStatus(gunName)}`);
+                card.setAttribute('role', 'button');
+                card.tabIndex = 0;
                 card.addEventListener('click', () => selectGun(gunName));
+                card.addEventListener('keydown', (e) => {
+                    if (e.target !== card || (e.key !== 'Enter' && e.key !== ' ')) return;
+                    e.preventDefault();
+                    selectGun(gunName);
+                });
 
                 const top = el('div', 'dmz-card-top');
                 top.appendChild(el('span', 'dmz-card-name', gunName));
                 top.appendChild(buildManualPips(gunName, false));
                 card.appendChild(top);
+
+                card.appendChild(buildGunsmithToggle(gunName, () => {
+                    const keepScroll = rightPanel.scrollTop;
+                    updateGunAndType(gunName);
+                    renderDmzOverview();
+                    rightPanel.scrollTop = keepScroll;
+                }));
 
                 const chips = el('div', 'bp-chips');
                 (dmz.blueprints || []).forEach(bp => {
@@ -2166,20 +2211,31 @@ document.addEventListener('DOMContentLoaded', () => {
         header.appendChild(el('p', 'panel-subtitle', 'DMZ loadout'));
         rightPanel.appendChild(header);
 
-        // ----- Manuals -----
+        // ----- Gunsmith -----
+        const unlocked = isGunsmithUnlocked(gunName);
+        const gunsmithSection = el('div', `dmz-section ${unlocked ? 'dmz-unlocked' : 'dmz-locked'}`);
+        gunsmithSection.appendChild(el('h3', 'camo-section', 'GUNSMITH'));
+        const gunsmithRow = el('div', 'manual-row');
+        gunsmithRow.appendChild(buildGunsmithToggle(gunName, refresh, true));
+        gunsmithRow.appendChild(el('p', 'manual-status', unlocked
+            ? 'Unlocked at the Gunsmith.'
+            : 'Locked at the Gunsmith. Click to mark it unlocked.'));
+        gunsmithSection.appendChild(gunsmithRow);
+        rightPanel.appendChild(gunsmithSection);
+
+        // ----- Manuals (War Spoils progress) -----
         const dmz = peekDmz(gunName);
         const manuals = dmz.manuals || 0;
         const manualSection = el('div', `dmz-section ${getDmzStatus(gunName)}`);
-        manualSection.appendChild(el('h3', 'camo-section', 'WEAPON MANUALS'));
+        manualSection.appendChild(el('h3', 'camo-section', `WEAPON MANUALS · ${dmzSettings.lootCamoName}`));
 
         const manualRow = el('div', 'manual-row');
         manualRow.appendChild(buildManualPips(gunName, true, refresh));
         let statusText;
-        if (manuals === 0) statusText = 'No manual extracted yet. Weapon is locked at the Gunsmith.';
-        else if (manuals < dmzSettings.manualsForCamo) {
+        if (manuals < dmzSettings.manualsForCamo) {
             const left = dmzSettings.manualsForCamo - manuals;
-            statusText = `Unlocked at the Gunsmith. ${left} more manual${left === 1 ? '' : 's'} for ${dmzSettings.lootCamoName}.`;
-        } else statusText = `Unlocked, and ${dmzSettings.lootCamoName} camo earned.`;
+            statusText = `${manuals}/${dmzSettings.manualsForCamo} manuals extracted. ${left} more for ${dmzSettings.lootCamoName}.`;
+        } else statusText = `${dmzSettings.lootCamoName} camo earned.`;
         manualRow.appendChild(el('p', 'manual-status', statusText));
         manualSection.appendChild(manualRow);
         rightPanel.appendChild(manualSection);
