@@ -43,15 +43,13 @@ const weaponsByType = {
 // =========================
 // track    = the camo track every gun has (Military -> Special -> Gold ... Divergence)
 // prestige = Weapon Prestige camos
-// mp/dmz/wz = mode-specific Mastery camos
-const modeOrder = ["track", "prestige", "mp", "dmz", "wz"];
+// These are tracked per weapon. Mastery camos are account-wide and have their own
+// MASTERY tab (see masteryModes below).
+const modeOrder = ["track", "prestige"];
 
 const modeLabels = {
     track: "CAMO TRACK",
-    prestige: "PRESTIGE",
-    mp: "MP MASTERY",
-    dmz: "DMZ MASTERY",
-    wz: "WARZONE MASTERY"
+    prestige: "PRESTIGE"
 };
 
 // Views for the per-gun toggle on the Camo Track tab.
@@ -452,25 +450,58 @@ const buildTrack = (gun, type) => [
 ];
 
 // =========================
-// MASTERY + PRESTIGE CAMOS
+// MASTERY CAMOS (account-wide: MASTERY tab)
+// =========================
+// Mastery is tracked once for your account, not per weapon: any weapon counts toward
+// the challenge, and each camo unlocks on every weapon at once. Divergence (earned once,
+// for 33 Harmonic Break challenges) opens the first camo in every mode; after that each
+// camo needs the one before it in the same mode.
+//   id        - what progress is saved under (don't change once you've started tracking)
+//   challenge - the in-game challenge
+//   target    - the number to reach (the app shows a progress counter toward it)
+//   unit      - what's being counted ("times", "kills")
+// Sources (Nov 2026): xboosty.com (updated 19 Nov), unplayed.gg (24 Nov), neuralboost.gg
+// (22 Nov), timesaver.gg (Warzone, citing Activision's 2 Nov reveal).
+const masteryGate = {
+    name: "DIVERGENCE",
+    harmonicNeeded: 33,
+    text: "Earned once for your account by completing 33 Harmonic Break challenges. It opens the first Mastery camo in every mode."
+};
+
+const masteryModes = [
+    {
+        id: "mp",
+        label: "MULTIPLAYER",
+        camos: [
+            { id: "mercurial-drift", name: "MERCURIAL DRIFT", challenge: "Get 10 kills in a match 250 times", target: 250, unit: "times", tier: "m1" },
+            { id: "polyatomic-reforged", name: "POLYATOMIC REFORGED", challenge: "Get 3 kills without taking damage 300 times", target: 300, unit: "times", tier: "m2" },
+            { id: "orion-reforged", name: "ORION REFORGED", challenge: "Get 5 kills without dying 500 times", target: 500, unit: "times", tier: "m3" }
+        ]
+    },
+    {
+        id: "dmz",
+        label: "DMZ",
+        camos: [
+            { id: "chiral", name: "CHIRAL", challenge: "Get 2,500 kills on Tier 3+ enemies", target: 2500, unit: "kills", tier: "m1" },
+            { id: "ripple-tide", name: "RIPPLE TIDE", challenge: "Extract 2 Lieutenant dog tags in a single deployment 50 times", target: 50, unit: "times", tier: "m2" },
+            { id: "helio", name: "HELIO", challenge: "Get 25,000 kills with Legendary weapons on a max-level Operator", target: 25000, unit: "kills", tier: "m3" }
+        ]
+    },
+    {
+        id: "wz",
+        label: "WARZONE",
+        camos: [
+            { id: "parallax", name: "PARALLAX", challenge: "Get 5 kills in a match 300 times", target: 300, unit: "times", tier: "m1" },
+            { id: "damascus-reforged", name: "DAMASCUS REFORGED", challenge: "Get 2 kills without plating 200 times", target: 200, unit: "times", tier: "m2" },
+            { id: "empyros", name: "EMPYROS", challenge: "Finish top 5 with at least 6 kills 75 times", target: 75, unit: "times", tier: "m3" }
+        ]
+    }
+];
+
+// =========================
+// PRESTIGE CAMOS (per weapon)
 // =========================
 const modeCamos = {
-    mp: [
-        { name: "MERCURIAL DRIFT", challenge: "", tier: "m1" },
-        { name: "POLYATOMIC REFORGED", challenge: "", tier: "m2" },
-        { name: "ORION REFORGED", challenge: "", tier: "m3" }
-    ],
-    dmz: [
-        { name: "CHIRAL", challenge: "", tier: "m1" },
-        { name: "RIPPLE TIDE", challenge: "", tier: "m2" },
-        { name: "HELIO", challenge: "", tier: "m3" }
-    ],
-    wz: [
-        // Parallax placement in Warzone is a best guess; swap if the in-game order differs.
-        { name: "PARALLAX", challenge: "", tier: "m1" },
-        { name: "DAMASCUS REFORGED", challenge: "", tier: "m2" },
-        { name: "EMPYROS", challenge: "", tier: "m3" }
-    ],
     prestige: [
         { name: "PYROCLAST", challenge: "", tier: "p1" },
         { name: "PYROCLAST TERMINUS", challenge: "", tier: "p2" },
@@ -884,9 +915,6 @@ const weapons = Object.fromEntries(
                 gun,
                 {
                     track: buildTrack(gun, type),
-                    mp: modeCamos.mp,
-                    dmz: modeCamos.dmz,
-                    wz: modeCamos.wz,
                     prestige: modeCamos.prestige
                 }
             ])
@@ -902,5 +930,7 @@ window.MW4_TRACKER_DATA = {
     modeLabels,
     trackViews,
     weapons,
+    masteryGate,
+    masteryModes,
     dmzSettings
 };

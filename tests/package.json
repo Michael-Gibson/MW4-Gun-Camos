@@ -1,0 +1,11 @@
+{
+  "name": "mw4-tracker-tests",
+  "private": true,
+  "description": "Browser tests for the MW4 Camo Tracker (headless Microsoft Edge via playwright-core). The app itself has no dependencies.",
+  "scripts": {
+    "test": "node run-all.js"
+  },
+  "devDependencies": {
+    "playwright-core": "1.65.0"
+  }
+}

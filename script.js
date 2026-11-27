@@ -27,11 +27,19 @@ document.addEventListener('DOMContentLoaded', () => {
         : (dmzSettings.gearCategories || []);
     const rarityLabel = Object.fromEntries(dmzSettings.rarities.map(r => [r.id, r.label]));
 
+    // Mastery camos are account-wide (one MASTERY tab), not per weapon
+    const masteryModes = appData.masteryModes || [];
+    const masteryGate = { name: 'DIVERGENCE', harmonicNeeded: 33, text: '', ...(appData.masteryGate || {}) };
+    const masteryCamosAll = masteryModes.flatMap(m => m.camos);
+
     // Extra tabs that are not camo modes
     const LOADOUT_MODE = 'loadout';
     const LOADOUT_LABEL = 'DMZ LOADOUT';
     const CHALLENGE_MODE = 'challenges';
     const CHALLENGE_LABEL = 'CHALLENGES';
+    const MASTERY_MODE = 'mastery';
+    const MASTERY_LABEL = 'MASTERY';
+    const OLD_MASTERY_MODES = ['mp', 'dmz', 'wz']; // the old per-weapon MP / DMZ / Warzone Mastery tabs
     const UPGRADE_TYPE = '__upgrade__'; // "type" value for 3D Printer upgrades in the add form
 
     // Roman numerals for upgrade tiers (I, II, III, IV, V...)
@@ -131,8 +139,14 @@ document.addEventListener('DOMContentLoaded', () => {
             completedAt: Number(c.completedAt) || 0
         }));
 
+    // Mastery progress: mastery[camoId] = { done, progress } (account-wide)
+    const normMastery = (m) => Object.fromEntries(Object.entries(m && typeof m === 'object' ? m : {})
+        .filter(([, v]) => v && typeof v === 'object')
+        .map(([id, v]) => [id, { done: Boolean(v.done), progress: toCount(v.progress) }]));
+
     const defaultState = () => ({
         camos: {},   // camos[mode][gun] = { [camoKey]: true }
+        mastery: {}, // mastery[camoId] = { done, progress }
         dmz: {},     // dmz[gun] = { manuals: 0-3, blueprints: [{ name, claimed, rarity }] }
         gear: [],    // 3D Printer recipes: [{ category, name, rarity, obtained }]
         seededRecipes: [], // starter recipes already added once (so deleted ones stay deleted)
@@ -164,6 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const base = defaultState();
             return {
                 camos: parsed.camos || {},
+                // null = a save from before the MASTERY tab: converted from per-weapon checks below
+                mastery: parsed.mastery && typeof parsed.mastery === 'object' ? normMastery(parsed.mastery) : null,
                 dmz: parsed.dmz || {},
                 gear: Array.isArray(parsed.gear) ? parsed.gear : [],
                 seededRecipes: Array.isArray(parsed.seededRecipes) ? parsed.seededRecipes : [],
@@ -197,8 +213,10 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.entries(guns || {}).forEach(([gunName, value]) => {
             if (!Array.isArray(value)) return;
             const keyed = {};
-            getEntries(mode, gunName).forEach(({ key }, i) => {
-                if (value[i]) keyed[key] = true;
+            const entries = getEntries(mode, gunName);
+            value.forEach((checked, i) => {
+                // Modes that no longer have per-weapon camos (old Mastery tabs) keep their position as the key
+                if (checked) keyed[entries[i] ? entries[i].key : String(i)] = true;
             });
             guns[gunName] = keyed;
             migrated = true;
@@ -344,8 +362,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     });
 
+    // Mastery camos used to be checked per weapon on separate MP / DMZ / Warzone Mastery tabs.
+    // In game they're account-wide, so a camo checked on ANY weapon counts as done overall.
+    // (The old per-weapon checks are left in the save, unused, so nothing is lost.)
+    if (!state.mastery) {
+        state.mastery = {};
+        masteryModes.forEach(m => {
+            const oldGuns = Object.values(state.camos[m.id] || {});
+            m.camos.forEach((c, i) => {
+                // The old tabs saved each camo by its position ("0", "1", "2")
+                if (oldGuns.some(gun => gun && (gun[String(i)] || gun[c.id]))) state.mastery[c.id] = { done: true, progress: 0 };
+            });
+        });
+        migrated = true;
+    }
+    if (OLD_MASTERY_MODES.includes(state.ui.mode)) {
+        state.ui.mode = MASTERY_MODE;
+        migrated = true;
+    }
+
     // Validate restored UI state against current data
-    const validModes = [...modeOrder, LOADOUT_MODE, CHALLENGE_MODE];
+    const validModes = [...modeOrder, MASTERY_MODE, LOADOUT_MODE, CHALLENGE_MODE];
     if (!CHALLENGE_TYPES.includes(state.ui.challengeType)) state.ui.challengeType = 'money';
     if (!['all', 'active', 'done'].includes(state.ui.challengeFilter)) state.ui.challengeFilter = 'all';
     if (!validModes.includes(state.ui.mode)) state.ui.mode = 'track';
@@ -734,6 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         modeOrder.forEach(mode => makeTab(mode, modeLabels[mode] || mode.toUpperCase()));
+        if (masteryModes.length) makeTab(MASTERY_MODE, MASTERY_LABEL);
         tabsContainer.appendChild(el('span', 'tab-divider'));
         makeTab(LOADOUT_MODE, LOADOUT_LABEL, 'loadout-toggle');
         makeTab(CHALLENGE_MODE, CHALLENGE_LABEL, 'loadout-toggle');
@@ -768,7 +806,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (state.ui.mode === CHALLENGE_MODE && state.ui.view === 'detail') return; // no color key needed
+        // no color key needed on these pages
+        if ([CHALLENGE_MODE, MASTERY_MODE].includes(state.ui.mode) && state.ui.view === 'detail') return;
         const legendMode = isCamoMode() ? state.ui.mode : modeOrder[0];
         const camos = getGunCamos(legendMode, allGuns[0]).filter(c => c.tier);
         legendEl.appendChild(el('span', 'legend-title', 'Colors:'));
@@ -2475,6 +2514,155 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================
     // RIGHT PANEL: STATS
     // =========================
+    // =========================
+    // RIGHT PANEL: MASTERY (account-wide: MP / DMZ / Warzone side by side)
+    // =========================
+    const getMastery = (id) => state.mastery[id] || { done: false, progress: 0 };
+    const setMastery = (id, patch) => {
+        state.mastery[id] = { ...getMastery(id), ...patch };
+        saveState();
+    };
+    // Divergence needs 33 Harmonic Breaks: count the ones checked on the Camo Track
+    const harmonicCount = () => allGuns.filter(g => isChecked('track', g, 'harmonic')).length;
+    const fmtNum = (n) => Number(n).toLocaleString('en-US');
+
+    const renderMasteryPanel = () => {
+        const keepScroll = rightPanel.scrollTop;
+        rightPanel.innerHTML = '';
+        const rerender = () => renderMasteryPanel();
+
+        const doneAll = masteryCamosAll.filter(c => getMastery(c.id).done).length;
+        const header = el('div', 'right-panel-header');
+        const titleRow = el('div', 'title-row');
+        titleRow.appendChild(el('h2', null, 'MASTERY'));
+        titleRow.appendChild(el('span', `recipe-count mastery-total${doneAll === masteryCamosAll.length ? ' complete' : ''}`,
+            `${doneAll}/${masteryCamosAll.length} DONE`));
+        header.appendChild(titleRow);
+        header.appendChild(el('p', 'panel-subtitle',
+            'Account-wide: any weapon counts, and each camo unlocks on every weapon at once.'));
+        rightPanel.appendChild(header);
+
+        // ----- Divergence: opens the first camo in every mode -----
+        const hb = harmonicCount();
+        const need = masteryGate.harmonicNeeded;
+        const gateReady = hb >= need;
+        const gate = el('div', `mastery-gate${gateReady ? ' ready' : ''}`);
+        const gateTop = el('div', 'mastery-gate-top');
+        gateTop.appendChild(el('span', 'mastery-gate-name', masteryGate.name));
+        gateTop.appendChild(el('span', 'mastery-gate-count', gateReady
+            ? `✓ ${hb} HARMONIC BREAKS`
+            : `${hb} / ${need} HARMONIC BREAKS`));
+        gate.appendChild(gateTop);
+        if (masteryGate.text) gate.appendChild(el('p', 'mastery-gate-text', masteryGate.text));
+        const gateBar = el('div', 'mat-progress');
+        const gateFill = el('div', 'mat-progress-fill');
+        gateFill.style.width = `${Math.min(100, (hb / need) * 100)}%`;
+        gateBar.appendChild(gateFill);
+        gate.appendChild(gateBar);
+        gate.appendChild(el('p', 'mastery-gate-hint',
+            `Counted from the Harmonic Break boxes ticked on your Camo Track (${hb} of ${allGuns.length} weapons).`));
+        rightPanel.appendChild(gate);
+
+        // ----- One column per mode, camos in unlock order -----
+        const cols = el('div', 'mastery-columns');
+        masteryModes.forEach(mode => {
+            const col = el('section', 'mastery-col');
+            const modeDone = mode.camos.filter(c => getMastery(c.id).done).length;
+            const head = el('h3', 'camo-section recipe-heading', mode.label);
+            head.appendChild(el('span', `recipe-count${modeDone === mode.camos.length ? ' complete' : ''}`, `${modeDone}/${mode.camos.length}`));
+            col.appendChild(head);
+
+            mode.camos.forEach((c, i) => {
+                const prev = i ? mode.camos[i - 1] : null;
+                const open = prev ? getMastery(prev.id).done : true; // the first one opens with Divergence
+                const target = toCount(c.target);
+
+                const card = el('div', 'mastery-card');
+                const top = el('div', 'mastery-card-top');
+                top.appendChild(el('span', 'mastery-step', String(i + 1)));
+                top.appendChild(el('span', 'mastery-name', c.name));
+                const doneLabel = el('label', 'bp-card-claim mastery-done');
+                const doneCb = document.createElement('input');
+                doneCb.type = 'checkbox';
+                doneLabel.appendChild(doneCb);
+                doneLabel.appendChild(el('span', null, 'Done'));
+                top.appendChild(doneLabel);
+                card.appendChild(top);
+
+                card.appendChild(el('p', 'mastery-challenge', c.challenge || 'Challenge not known yet'));
+                card.appendChild(el('p', 'mastery-requires', prev ? `After ${prev.name}` : `After ${masteryGate.name}`));
+
+                // Progress toward the target (type it, or use −/+; Shift = 10)
+                let input = null;
+                let fill = null;
+                let status = null;
+                let minus = null;
+                if (target) {
+                    const prog = el('div', 'mastery-progress');
+                    const counts = el('div', 'mat-counts');
+                    minus = el('button', 'step-button', '−');
+                    minus.type = 'button';
+                    minus.title = 'One less (Shift: 10 less)';
+                    input = document.createElement('input');
+                    input.type = 'number';
+                    input.min = '0';
+                    input.inputMode = 'numeric';
+                    input.className = 'text-input mat-num mastery-num';
+                    input.setAttribute('aria-label', `${c.name} progress`);
+                    const plus = el('button', 'step-button', '+');
+                    plus.type = 'button';
+                    plus.title = 'One more (Shift: 10 more)';
+                    [minus, input, plus].forEach(n => counts.appendChild(n));
+                    counts.appendChild(el('span', 'mastery-target', `/ ${fmtNum(target)} ${(c.unit || '').toUpperCase()}`));
+                    prog.appendChild(counts);
+                    status = el('span', 'mat-status mastery-status');
+                    prog.appendChild(status);
+                    card.appendChild(prog);
+                    const bar = el('div', 'mat-progress');
+                    fill = el('div', 'mat-progress-fill');
+                    bar.appendChild(fill);
+                    card.appendChild(bar);
+
+                    const step = (dir) => (e) => {
+                        const p = Math.max(0, getMastery(c.id).progress + dir * (e.shiftKey ? 10 : 1));
+                        setMastery(c.id, p >= target ? { progress: p, done: true } : { progress: p });
+                        rerender();
+                    };
+                    minus.addEventListener('click', step(-1));
+                    plus.addEventListener('click', step(1));
+                    // Typing updates in place (keeps focus); the rest of the page catches up when you leave the box
+                    input.addEventListener('input', () => {
+                        const p = toCount(input.value);
+                        setMastery(c.id, p >= target ? { progress: p, done: true } : { progress: p });
+                        sync();
+                    });
+                    input.addEventListener('change', rerender);
+                }
+
+                const sync = () => {
+                    const m = getMastery(c.id);
+                    doneCb.checked = m.done;
+                    card.className = `mastery-card ${m.done ? `done tier-${c.tier || 'm1'}` : (open ? 'current' : 'locked')}`;
+                    if (!target) return;
+                    if (document.activeElement !== input) input.value = m.progress;
+                    minus.disabled = m.progress <= 0;
+                    const pct = m.done ? 100 : Math.min(100, (m.progress / target) * 100);
+                    fill.style.width = `${pct}%`;
+                    status.textContent = m.done ? '✓ DONE' : `${fmtNum(Math.max(0, target - m.progress))} LEFT`;
+                };
+                doneCb.addEventListener('change', () => {
+                    setMastery(c.id, { done: doneCb.checked });
+                    rerender();
+                });
+                sync();
+                col.appendChild(card);
+            });
+            cols.appendChild(col);
+        });
+        rightPanel.appendChild(cols);
+        rightPanel.scrollTop = keepScroll;
+    };
+
     const renderStatsPanel = () => {
         rightPanel.innerHTML = '';
 
@@ -2494,6 +2682,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const pct = total ? ((done / total) * 100).toFixed(1) : '0.0';
             return [`${modeLabels[mode]} · ${done}/${total}`, `${pct}%`];
         });
+        if (masteryCamosAll.length) {
+            const masteryDone = masteryCamosAll.filter(c => getMastery(c.id).done).length;
+            items.push([`MASTERY · ${masteryDone}/${masteryCamosAll.length}`, `${((masteryDone / masteryCamosAll.length) * 100).toFixed(1)}%`]);
+        }
         const dmzUnlocked = allGuns.filter(g => getDmzStatus(g) !== 'dmz-locked').length;
         items.push(['DMZ weapons unlocked', `${dmzUnlocked}/${allGuns.length}`]);
         rightPanel.appendChild(buildStatCards(items));
@@ -2589,8 +2781,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const render = ({ keepScroll = false } = {}) => {
         const scrollBefore = rightPanel.scrollTop;
-        // The DMZ Loadout tab has its own weapon cards, so the weapons sidebar is hidden there.
-        leftPanel.hidden = state.ui.view === 'detail' && [LOADOUT_MODE, CHALLENGE_MODE].includes(state.ui.mode);
+        // These tabs aren't per weapon (or have their own weapon cards), so the weapons sidebar is hidden.
+        leftPanel.hidden = state.ui.view === 'detail' && [LOADOUT_MODE, CHALLENGE_MODE, MASTERY_MODE].includes(state.ui.mode);
         updateTabs();
         renderLegend();
         updateAllColors();
@@ -2600,6 +2792,8 @@ document.addEventListener('DOMContentLoaded', () => {
             renderStatsPanel();
         } else if (state.ui.mode === CHALLENGE_MODE) {
             renderChallenges();
+        } else if (state.ui.mode === MASTERY_MODE) {
+            renderMasteryPanel();
         } else if (state.ui.mode === LOADOUT_MODE) {
             if (state.ui.dmzGun) renderDmzDetail(state.ui.dmzGun);
             else if (state.ui.dmzView === 'blueprints') renderBlueprintsView();
