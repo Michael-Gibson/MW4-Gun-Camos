@@ -288,9 +288,11 @@ button { font-family: inherit; }
 
 /* Scrollbars */
 .left-panel::-webkit-scrollbar,
-.right-panel::-webkit-scrollbar { width: 10px; }
+.right-panel::-webkit-scrollbar,
+.shop-list::-webkit-scrollbar { width: 10px; }
 .left-panel::-webkit-scrollbar-thumb,
-.right-panel::-webkit-scrollbar-thumb {
+.right-panel::-webkit-scrollbar-thumb,
+.shop-list::-webkit-scrollbar-thumb {
     background: var(--line-strong);
     border-radius: 10px;
     border: 2px solid var(--panel);
@@ -1391,6 +1393,82 @@ button.rarity-tag:hover { filter: brightness(1.25); }
 .step-button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
 .step-button:disabled { opacity: 0.35; cursor: default; }
 
+/* ===== TOASTS (small messages, top right corner) ===== */
+.toast-stack {
+    position: fixed;
+    top: 16px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(340px, calc(100vw - 32px));
+    pointer-events: none; /* only the toasts themselves catch clicks */
+}
+
+.toast {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 9px 14px 10px;
+    text-align: left;
+    font: inherit;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line-strong);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    animation: toast-in 0.18s ease-out;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+button.toast { cursor: pointer; }
+button.toast:hover { background: var(--panel-3); }
+.toast.leaving { opacity: 0; transform: translateX(12px); }
+.toast-remove { border-left-color: var(--amber); }
+.toast-info { border-left-color: var(--line-strong); }
+
+.toast-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.toast-label,
+.toast-view {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+}
+
+.toast-remove .toast-label { color: var(--amber); }
+.toast-info .toast-label { color: var(--text-dim); }
+.toast-view { color: var(--text-faint); }
+button.toast:hover .toast-view { color: var(--accent); }
+
+.toast-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.toast-name[class*="rarity-"] { color: var(--r); }
+
+.toast-detail {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateX(16px); }
+    to { opacity: 1; transform: none; }
+}
+
 /* ===== NOTES & MATERIALS ===== */
 .notepad {
     display: block;
@@ -1398,6 +1476,72 @@ button.rarity-tag:hover { filter: brightness(1.25); }
     min-height: 160px;
     resize: vertical;
     line-height: 1.5;
+}
+
+/* Top row: notepad (left half) + shopping list (right half), same height */
+.notes-top {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-items: stretch;
+    margin-top: 6px;
+}
+
+.notes-top > .dmz-section {
+    margin-top: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* The notepad grows to match the shopping list's height */
+.notes-pad-section .notepad {
+    flex: 1;
+    min-height: 260px;
+}
+
+/* Long lists scroll inside the shopping list instead of stretching the row */
+.shop-list {
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* Slightly tighter rows so they fit in half the width */
+.shop-section { container-type: inline-size; }
+.shop-section .mat-row { gap: 6px 10px; }
+.shop-section .mat-num { flex-basis: 52px; width: 52px; }
+.shop-section .mat-status { min-width: 64px; }
+.shop-section .craft-bar { margin-bottom: 10px; }
+
+/* Narrow shopping list: two tidy lines per material instead of a ragged wrap
+   line 1: name ........ 30 LEFT  ×
+   line 2: HAVE − 0 +   NEED 30          */
+@container (max-width: 600px) {
+    .shop-section .mat-row {
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+        grid-template-areas:
+            "name name name status remove"
+            "have need .    .      .     "
+            "bar  bar  bar  bar    bar   ";
+        align-items: center;
+    }
+    .shop-section .mat-name-wrap { grid-area: name; min-width: 0; }
+    .shop-section .mat-have { grid-area: have; }
+    .shop-section .mat-need { grid-area: need; margin-left: 6px; }
+    .shop-section .mat-status { grid-area: status; }
+    .shop-section .mat-row > .icon-button { grid-area: remove; }
+    .shop-section .mat-progress { grid-area: bar; }
+}
+
+.pick-section { margin-top: 12px; }
+.pick-section .craft-picker { margin-top: 0; }
+.pick-section .mat-picker { margin-top: 10px; }
+
+@media (max-width: 900px) {
+    .notes-top { grid-template-columns: 1fr; }
+    .shop-list { max-height: none; overflow-y: visible; padding-right: 0; }
 }
 
 .ghost-button:disabled { opacity: 0.4; cursor: default; }

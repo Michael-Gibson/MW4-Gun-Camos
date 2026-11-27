@@ -1339,6 +1339,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const rarityClass = (rarity) => (rarity ? ` rarity-${rarity}` : '');
 
+    // Small messages in the top right corner (e.g. "Added to shopping list").
+    // Newest on top, at most 3, each fades after a few seconds. onClick makes it a button.
+    const TOAST_MS = 3000;
+    const TOAST_MAX = 3;
+    let toastStack = null;
+    const showToast = ({ label, name, rarity = '', detail = '', kind = 'add', onClick = null }) => {
+        if (!toastStack) {
+            toastStack = el('div', 'toast-stack');
+            toastStack.setAttribute('role', 'status');
+            toastStack.setAttribute('aria-live', 'polite');
+            document.body.appendChild(toastStack);
+        }
+        const toast = el(onClick ? 'button' : 'div', `toast toast-${kind}`);
+        const head = el('span', 'toast-head');
+        head.appendChild(el('span', 'toast-label', label));
+        if (onClick) {
+            toast.type = 'button';
+            toast.title = 'Show the shopping list';
+            head.appendChild(el('span', 'toast-view', 'VIEW ↑'));
+        }
+        toast.appendChild(head);
+        toast.appendChild(el('span', `toast-name${rarityClass(rarity)}`, name));
+        if (detail) toast.appendChild(el('span', 'toast-detail', detail));
+
+        const dismiss = () => {
+            if (!toast.isConnected || toast.classList.contains('leaving')) return;
+            toast.classList.add('leaving');
+            setTimeout(() => toast.remove(), 200);
+        };
+        toast.addEventListener('click', () => {
+            if (onClick) onClick();
+            dismiss();
+        });
+        toastStack.prepend(toast);
+        while (toastStack.children.length > TOAST_MAX) toastStack.lastChild.remove();
+        setTimeout(dismiss, TOAST_MS);
+    };
+
+    // Shopping list messages: "VIEW ↑" scrolls up to the list.
+    const showShopToast = (added, name, rarity, detail = '') => showToast({
+        label: added ? '✓ ADDED TO SHOPPING LIST' : 'REMOVED FROM SHOPPING LIST',
+        name,
+        rarity,
+        detail,
+        kind: added ? 'add' : 'remove',
+        onClick: () => {
+            const shopSection = rightPanel.querySelector('.shop-section');
+            if (shopSection) shopSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+
     // Notepad saves shortly after you stop typing (and right away when you click out).
     let notesSaveTimer = null;
     const flushNotes = () => {
@@ -1351,6 +1402,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderNotesView = () => {
         const keepScroll = rightPanel.scrollTop;
+        // The shopping list scrolls on its own too: keep its spot when the view redraws
+        const oldList = rightPanel.querySelector('.shop-list');
+        const keepListScroll = oldList ? oldList.scrollTop : 0;
         rightPanel.innerHTML = '';
         const rerender = () => renderNotesView();
         const mats = state.materials;
@@ -1362,8 +1416,12 @@ document.addEventListener('DOMContentLoaded', () => {
         header.appendChild(el('p', 'panel-subtitle', 'Jot down plans, and pick what to craft to get a shopping list of materials.'));
         rightPanel.appendChild(header);
 
-        // ----- Notepad -----
-        const noteSection = el('div', 'dmz-section');
+        // Layout: [ notepad | shopping list ] side by side on top, pickers full width below.
+        const topRow = el('div', 'notes-top');
+        rightPanel.appendChild(topRow);
+
+        // ----- Notepad (top left) -----
+        const noteSection = el('div', 'dmz-section notes-pad-section');
         const noteHeading = el('h3', 'camo-section recipe-heading', 'NOTEPAD');
         const savedTag = el('span', 'recipe-count', 'SAVED');
         noteHeading.appendChild(savedTag);
@@ -1386,7 +1444,7 @@ document.addEventListener('DOMContentLoaded', () => {
             savedTag.textContent = 'SAVED';
         });
         noteSection.appendChild(pad);
-        rightPanel.appendChild(noteSection);
+        topRow.appendChild(noteSection);
 
         // ----- Materials tracker -----
         // Shopping list: add up the materials for every item picked under "Crafting for".
@@ -1419,11 +1477,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const recipeNeed = (t) => craftNeeds[matKey(t.name)] || 0;
         const needOf = (t) => recipeNeed(t) || t.need;
 
-        const matSection = el('div', 'dmz-section');
-        const matHeading = el('h3', 'camo-section recipe-heading', 'MATERIALS TRACKER');
+        // ----- Shopping list (top right): picked crafts + tracked material rows -----
+        const shopSection = el('div', 'dmz-section shop-section');
+        const shopHeading = el('h3', 'camo-section recipe-heading', 'SHOPPING LIST');
         const readyPill = el('span', 'recipe-count');
-        matHeading.appendChild(readyPill);
-        matSection.appendChild(matHeading);
+        shopHeading.appendChild(readyPill);
+        shopSection.appendChild(shopHeading);
+        topRow.appendChild(shopSection);
+
+        // ----- Pickers (full width below): items to craft + base resources / ingredients -----
+        const pickSection = el('div', 'dmz-section pick-section');
+        pickSection.appendChild(el('h3', 'camo-section', 'ADD TO THE SHOPPING LIST'));
 
         const updateReadyPill = () => {
             const withTarget = tracked.filter(t => needOf(t) > 0);
@@ -1507,7 +1571,7 @@ document.addEventListener('DOMContentLoaded', () => {
         listButtons.appendChild(resetBtn);
         listButtons.appendChild(clearBtn);
         craftBar.appendChild(listButtons);
-        matSection.appendChild(craftBar);
+        shopSection.appendChild(craftBar);
 
         // Item picker, grouped like the 3D Printer menu and colored by rarity
         const craftPicker = document.createElement('details');
@@ -1545,10 +1609,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 chip.appendChild(el('span', 'craft-chip-cost', costText(r)));
                 chip.addEventListener('click', () => {
                     const i = mats.crafting.findIndex(c => matKey(c.name) === r.name);
-                    if (i >= 0) mats.crafting.splice(i, 1);
-                    else mats.crafting.push({ name: r.name, qty: 1 });
+                    const adding = i < 0;
+                    if (adding) mats.crafting.push({ name: r.name, qty: 1 });
+                    else mats.crafting.splice(i, 1);
                     saveState();
                     rerender();
+                    showShopToast(adding, r.name, (itemInfo[r.name] || {}).rarity, adding ? `Needs ${costText(r)}` : '');
                 });
                 chips.appendChild(chip);
             });
@@ -1556,7 +1622,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         craftPicker.appendChild(el('p', 'panel-hint',
             'Only items with known costs are listed. Add more under craftingRecipes in mw4-data.js.'));
-        matSection.appendChild(craftPicker);
+        pickSection.appendChild(craftPicker);
 
         // Tracked rows: HAVE (with -/+) and NEED. Typing updates in place so focus isn't lost.
         const numInput = (value, label) => {
@@ -1578,7 +1644,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (fromCraft) nameWrap.appendChild(el('span', 'mat-sources', `For ${craftSources[matKey(t.name)].join(', ')}`));
             row.appendChild(nameWrap);
 
-            const haveGroup = el('div', 'mat-counts');
+            const haveGroup = el('div', 'mat-counts mat-have');
             haveGroup.appendChild(el('span', 'mat-count-label', 'HAVE'));
             const minus = el('button', 'step-button', '−');
             minus.type = 'button';
@@ -1590,7 +1656,7 @@ document.addEventListener('DOMContentLoaded', () => {
             [minus, haveInput, plus].forEach(n => haveGroup.appendChild(n));
             row.appendChild(haveGroup);
 
-            const needGroup = el('div', 'mat-counts');
+            const needGroup = el('div', 'mat-counts mat-need');
             needGroup.appendChild(el('span', 'mat-count-label', 'NEED'));
             const needInput = numInput(fromCraft || t.need || '', `${t.name} need`);
             needInput.placeholder = '–';
@@ -1659,10 +1725,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return row;
         };
 
-        const list = el('div', 'mat-list');
-        if (!tracked.length) list.appendChild(el('p', 'bp-empty', 'Nothing tracked yet. Pick items to craft above, or click materials below.'));
+        // The rows scroll inside the shopping list once it gets long (keeps the notepad beside it).
+        const list = el('div', 'mat-list shop-list');
+        if (!tracked.length) list.appendChild(el('p', 'bp-empty', 'Nothing on the list yet. Pick items to craft or materials below.'));
         tracked.forEach(t => list.appendChild(buildMatRow(t)));
-        matSection.appendChild(list);
+        shopSection.appendChild(list);
         updateReadyPill();
 
         // ----- Material picker -----
@@ -1682,6 +1749,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             saveState();
             rerender();
+            showShopToast(i < 0, name, rarityOf[name]);
         };
 
         const picker = el('div', 'mat-picker');
@@ -1733,17 +1801,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const listed = materialGroups.some(([, items]) => items.some(i => i.name === name));
             if (!listed) mats.custom.push({ name, rarity: addRarity.value || '' });
-            if (!tracked.some(t => matKey(t.name) === name)) tracked.push({ name, have: 0, need: 0 });
+            const alreadyOnList = tracked.some(t => matKey(t.name) === name);
+            if (!alreadyOnList) tracked.push({ name, have: 0, need: 0 });
             saveState();
             rerender();
+            const rarity = listed ? rarityOf[name] : addRarity.value;
+            if (alreadyOnList) {
+                showToast({ label: 'ALREADY ON THE SHOPPING LIST', name, rarity, kind: 'info' });
+            } else showShopToast(true, name, rarity);
             const next = rightPanel.querySelector('.mat-add-form input');
             if (next) next.focus();
         });
         picker.appendChild(form);
-        matSection.appendChild(picker);
-        rightPanel.appendChild(matSection);
+        pickSection.appendChild(picker);
+        rightPanel.appendChild(pickSection);
 
         rightPanel.scrollTop = keepScroll;
+        list.scrollTop = keepListScroll;
     };
 
     // =========================

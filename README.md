@@ -33,9 +33,9 @@ The weapon list on the left is grouped by class and searchable. Each weapon is c
 
 ### DMZ Loadout
 
-- **Weapons & Manuals:** mark which weapons are unlocked at the Gunsmith (click a card's **LOCKED / ✓ GUNSMITH** button) and, separately, how many Weapon Manuals you've extracted toward the *War Spoils* camo (click the diamonds, 3 needed), plus per-weapon blueprints. Click anywhere else on a card to open that weapon. The overview works well on a second monitor.
+- **Weapons & Manuals:** mark which weapons are unlocked at the Gunsmith (click a card's **LOCKED / ✓ GUNSMITH** button) and, separately, how many Weapon Manuals you've extracted toward the *War Spoils* camo (click the diamonds, 3 needed), plus per-weapon blueprints. Click anywhere else on a card to open that weapon; **← All weapons** takes you back to the same spot in the list. The overview works well on a second monitor.
 - **Blueprints & Recipes:** a checklist of 3D Printer recipes grouped like the in-game menu, with rarity tags and tiered upgrades (I, II, III…).
-- **Notes & Materials:** a notepad and a materials tracker. Pick the items you're crafting and it builds a shopping list of the materials you need, with have/need counts.
+- **Notes & Materials:** a notepad (left) next to your shopping list (right). Pick the items you're crafting, or click base resources and ingredients, in the section below, and the shopping list fills in the materials you need with have/need counts. Long lists scroll inside the shopping list so the notepad stays beside it; on narrow screens the two stack. A message pops up in the top right corner whenever something is added to or removed from the list (click it to jump up to the list).
 
 ### Challenges
 
@@ -73,7 +73,7 @@ Tier and rarity colors are defined in [`styles.css`](styles.css) under **TIER CO
 
 ### Data accuracy
 
-Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Some weapons don't have published Military unlock levels yet, and the weapon list may include post-launch or seasonal guns. Check entries against the game and update `mw4-data.js` as needed.
+Challenge text comes from Infinity Ward's progression blog and community camo guides from launch week. Season 1 weapons (Cronen Osprey, CSG-35) come from community guides published after they released. Some weapons don't have published Military unlock levels yet, and the JAK 12 and ZLR Talonhawk Special camos haven't been revealed (both are upcoming in-season event rewards). Check entries against the game and update `mw4-data.js` as needed.
 
 ## Project structure
 
@@ -83,6 +83,29 @@ styles.css    All styling, including tier and rarity colors
 mw4-data.js   Weapons, camos, challenges and DMZ data (edit this one)
 script.js     App logic: state, rendering, tabs, DMZ tools, import/export
 ```
+
+## Changelog
+
+Newest first. Your saved progress carries over through every change listed here.
+
+### 2026-11-27
+
+- **Notes & Materials layout:** the notepad now takes the left half of the top row, with a new **Shopping List** on the right half. The shopping list holds the "Crafting for" items, Reset counts / Clear list, the READY counter and the material rows. The item picker, base resources, ingredients and "Material not listed?" box moved to a full-width **Add to the shopping list** section underneath.
+- The notepad stretches to match the shopping list's height. Long shopping lists scroll inside their own box (keeping their scroll spot when the list updates). On narrower windows each material row switches to two lines; on phone-sized screens the notepad and list stack.
+- **Shopping list messages:** picking or un-picking an item, clicking a material chip, or adding your own material shows a short message in the top right corner ("✓ Added to shopping list" in green, "Removed from shopping list" in amber, or "Already on the shopping list"), with the item's name in its rarity color and, for crafted items, what they need. Messages fade after 3 seconds (at most 3 at once); clicking one scrolls up to the shopping list.
+- **Clickable War Spoils diamonds on the overview:** the manual diamonds on each Weapons & Manuals card can be clicked to set the count without opening the weapon. The rest of the card still opens it.
+- **Back button keeps your place:** "← All weapons" returns to where you were scrolled in the weapon list instead of the top.
+- **Fix:** adding manuals to a gun no longer marks it unlocked at the Gunsmith; the two are fully separate.
+- **Gunsmith unlock tracked separately from War Spoils:** each weapon card (and the weapon page) has a **LOCKED / ✓ GUNSMITH** toggle, so a gun can be unlocked with 0 manuals. Older saves keep guns with 1+ manual marked unlocked. Legend, class headers, stat cards and the Stats page use the new flag.
+- **Fix:** Cronen Squall *Optical Reverb* DMZ challenge read "Get Get 3 enemy kills…".
+
+### 2026-11-22
+
+- **Season 1 weapons:** added the three Special camos with Multiplayer and DMZ challenges for the **Cronen Osprey** (In the Weeds, Dark Ichor, Chained) and **CSG-35** (Polyhedron, Rind, Black Grip). Their Military unlock levels are left as "level up this weapon" because guides disagree.
+
+### 2026-11-10
+
+- First version: camo track, Prestige and Mastery tabs, DMZ Loadout (weapons & manuals, blueprints & recipes, notes & materials), Challenges, Stats, and export / import / reset.
 
 ## Disclaimer
 
