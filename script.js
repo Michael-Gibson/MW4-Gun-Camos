@@ -1190,20 +1190,21 @@ document.addEventListener('DOMContentLoaded', () => {
         input.select();
     };
 
-    // WEAPON LEVEL card at the top of the Camo Track and Prestige tabs
+    // WEAPON LEVEL bar at the top of the Camo Track and Prestige tabs (pinned with the header):
+    // one row with the level, what's next, and the SET LEVEL button
     const buildWeaponLevelCard = (gunName) => {
         const entry = getLevelEntry(gunName);
         const box = el('div', 'weapon-level');
         const top = el('div', 'weapon-level-top');
         top.appendChild(el('span', 'weapon-level-title', 'WEAPON LEVEL'));
         top.appendChild(el('span', `weapon-level-value${entry ? '' : ' unset'}`, entry ? levelSummary(entry) : 'Not set'));
+        top.appendChild(el('p', 'weapon-level-hint', weaponLevelHint(gunName)));
         const btn = el('button', 'weapon-level-btn', 'SET LEVEL');
         btn.type = 'button';
         btn.setAttribute('aria-haspopup', 'dialog');
         btn.addEventListener('click', () => openLevelMenu(gunName));
         top.appendChild(btn);
         box.appendChild(top);
-        box.appendChild(el('p', 'weapon-level-hint', weaponLevelHint(gunName)));
         return box;
     };
 
@@ -1220,8 +1221,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const view = isTrack ? getTrackView() : null;
         const entries = getEntries(mode, gunName, view);
 
-        // camo-header: its title row (gun name + MP / DMZ / WARZONE) stays pinned to the top
-        // while you scroll the camos (styles.css)
+        // camo-header: the whole header (gun name + MP / DMZ / WARZONE, subtitle, shared hint,
+        // WEAPON LEVEL bar) stays pinned to the top while you scroll the camos (styles.css)
         const header = el('div', 'right-panel-header camo-header');
         const titleRow = el('div', 'title-row');
         titleRow.appendChild(el('h2', null, gunName));

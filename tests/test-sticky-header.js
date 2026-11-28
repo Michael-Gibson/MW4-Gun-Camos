@@ -28,16 +28,18 @@ const check = (label, ok, detail = '') => {
         await page.reload();
         await page.waitForTimeout(100);
     };
-    const bar = () => page.locator('.camo-header > .title-row');
+    const bar = () => page.locator('.camo-header');
     const viewBtn = (label) => page.locator('.view-toggle .segment', { hasText: new RegExp(`^${label}$`) });
     // Where the bar is, and whether it's the thing actually on top at its centre
-    const barState = () => page.evaluate(() => {
-        const b = document.querySelector('.camo-header > .title-row');
+    // sel: '.camo-header' (the whole pinned header) or ROW (phones pin just the gun row)
+    const ROW = '.camo-header > .title-row';
+    const barState = (sel = '.camo-header') => page.evaluate((sel) => {
+        const b = document.querySelector(sel);
         const r = b.getBoundingClientRect();
         const panel = document.getElementById('rightPanel').getBoundingClientRect();
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         return { top: Math.round(r.top), bottom: Math.round(r.bottom), panelTop: Math.round(panel.top), onTop: b.contains(hit) };
-    });
+    }, sel);
     const panelScroll = () => page.evaluate(() => document.getElementById('rightPanel').scrollTop);
     const scrollPanelToBottom = () => page.evaluate(() => { const p = document.getElementById('rightPanel'); p.scrollTop = p.scrollHeight; });
 
@@ -55,6 +57,23 @@ const check = (label, ok, detail = '') => {
     check('After scrolling to the bottom (Completionist camos), it is still at the top and on top of the camos',
         scrolled > 500 && Math.abs(s1.top - s1.panelTop) <= 2 && s1.onTop, JSON.stringify({ scrolled, ...s1 }));
     check('Gun name visible in it', (await bar().locator('h2').textContent()) === 'M4' && await bar().locator('h2').isVisible());
+    const inView = (loc) => loc.evaluate(e => {
+        const r = e.getBoundingClientRect(), p = document.getElementById('rightPanel').getBoundingClientRect();
+        return r.height > 0 && r.top >= p.top - 1 && r.bottom <= p.bottom + 1;
+    });
+    check('The "MULTIPLAYER CAMO TRACK" line and the shared line stay visible too',
+        await inView(bar().locator('.panel-subtitle')) && await inView(bar().locator('.panel-hint'))
+        && (await bar().locator('.panel-hint').textContent()).startsWith('Every camo here is shared'));
+    check('The WEAPON LEVEL bar stays visible too (level, Next, SET LEVEL)', await inView(bar().locator('.weapon-level'))
+        && await inView(bar().locator('.weapon-level-btn')) && await inView(bar().locator('.weapon-level-hint')));
+    const oneRow = await bar().locator('.weapon-level').evaluate(box => {
+        const mid = (sel) => { const r = box.querySelector(sel).getBoundingClientRect(); return r.top + r.height / 2; };
+        const ys = ['.weapon-level-title', '.weapon-level-value', '.weapon-level-hint', '.weapon-level-btn'].map(mid);
+        return Math.max(...ys) - Math.min(...ys) < 12;
+    });
+    check('Level, "Next:" text and SET LEVEL are on one row', oneRow);
+    const headerHeight = await bar().evaluate(e => Math.round(e.getBoundingClientRect().height));
+    check(`The pinned block stays compact (${headerHeight}px)`, headerHeight <= 200, String(headerHeight));
     await page.screenshot({ path: path.join(outDir, 'sticky-desktop-scrolled.png') });
     await viewBtn('WARZONE').click();
     check('Clicking WARZONE down there switches the view', /^WARZONE camo track$/i.test(await page.locator('.panel-subtitle').first().textContent()));
@@ -65,7 +84,7 @@ const check = (label, ok, detail = '') => {
     check('DMZ works from there too', /^DMZ camo track$/i.test(await page.locator('.panel-subtitle').first().textContent()) && Math.abs((await panelScroll()) - scrolled) <= 5);
     const rowUnderBar = await page.evaluate(() => {
         // The first camo row below the bar should be fully visible (not hidden under the bar)
-        const b = document.querySelector('.camo-header > .title-row').getBoundingClientRect();
+        const b = document.querySelector('.camo-header').getBoundingClientRect();
         const rows = [...document.querySelectorAll('.camo-row')].map(r => r.getBoundingClientRect()).filter(r => r.bottom > b.bottom + 5);
         return rows.length > 0;
     });
@@ -82,14 +101,14 @@ const check = (label, ok, detail = '') => {
     await page.setViewportSize({ width: 1400, height: 900 });
 
     // ---------------------------------------------------------------
-    console.log('\n3. Phone: the camo panel scrolls under the weapon list, the gun row stays at its top');
+    console.log('\n3. Phone: the camo panel is short, so only the gun row (name + MP / DMZ / WARZONE) is pinned');
     await page.setViewportSize({ width: 390, height: 844 });
     await open({ ui: { mode: 'track', view: 'detail', gun: 'KG-7 VULCAN', trackMode: 'mp' } });
     await page.locator('#rightPanel').scrollIntoViewIfNeeded();
     await scrollPanelToBottom();
     await page.waitForTimeout(150);
     const phScroll = await panelScroll();
-    const ph = await barState();
+    const ph = await barState(ROW);
     check('Scrolled to the bottom of the camos: the row is at the top of the panel', phScroll > 500 && Math.abs(ph.top - ph.panelTop) <= 2 && ph.onTop, JSON.stringify({ phScroll, ...ph }));
     check('All three buttons are visible', await viewBtn('MULTIPLAYER').isVisible() && await viewBtn('DMZ').isVisible() && await viewBtn('WARZONE').isVisible());
     await page.screenshot({ path: path.join(outDir, 'sticky-phone-scrolled.png') });
@@ -97,9 +116,13 @@ const check = (label, ok, detail = '') => {
     await page.waitForTimeout(150);
     check('Clicking WARZONE switches the view and keeps your place', /^WARZONE camo track$/i.test(await page.locator('.panel-subtitle').first().textContent())
         && Math.abs((await panelScroll()) - phScroll) <= 5, `${await panelScroll()} vs ${phScroll}`);
-    const ph2 = await barState();
+    const ph2 = await barState(ROW);
     check('…row still at the top', Math.abs(ph2.top - ph2.panelTop) <= 2 && ph2.onTop);
     check('No sideways scrolling', await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
+    check('The shared line and WEAPON LEVEL bar scroll away on phones (room for the camos)', !(await page.locator('.weapon-level-btn').evaluate(e => {
+        const r = e.getBoundingClientRect(), p = document.getElementById('rightPanel').getBoundingClientRect();
+        return r.bottom > p.top && r.top < p.bottom;
+    })));
 
     // ---------------------------------------------------------------
     console.log('\n4. Other pages are unchanged');

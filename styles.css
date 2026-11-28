@@ -515,21 +515,19 @@ button { font-family: inherit; }
 /* ===== RIGHT PANEL ===== */
 .right-panel-header { margin-bottom: 8px; }
 
-/* Gun pages (Camo Track + Prestige): the row with the gun name and the MULTIPLAYER / DMZ /
-   WARZONE toggle stays pinned to the top while you scroll the camos. The header box steps
-   aside (display: contents) so the row can stick for the whole page, not just the header. */
-.camo-header { display: contents; }
-.camo-header > .title-row {
+/* Gun pages (Camo Track + Prestige): the whole header (gun name + MULTIPLAYER / DMZ /
+   WARZONE, the subtitle, the shared hint and the WEAPON LEVEL bar) stays pinned to the top
+   while you scroll the camos. */
+.camo-header {
     position: sticky;
     top: -20px;                 /* the panel's top padding: stick flush with its top edge */
     z-index: 6;
-    margin: -20px -24px 6px;    /* stretch over the panel padding so nothing shows behind it */
+    margin: -20px -24px 12px;   /* stretch over the panel padding so nothing shows behind it */
     padding: 16px 24px 10px;
     background: var(--panel);
     border-bottom: 1px solid var(--line);
     border-radius: 10px 10px 0 0;
 }
-.camo-header > :last-child { margin-bottom: 12px; }
 
 .title-row {
     display: flex;
@@ -1114,8 +1112,8 @@ button { font-family: inherit; }
 
 /* WEAPON LEVEL card (Camo Track + Prestige): SET LEVEL opens the level / prestige menu */
 .weapon-level {
-    margin: 10px 0 4px;
-    padding: 8px 12px;
+    margin: 8px 0 0;
+    padding: 6px 12px;
     background: var(--panel-2);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -1154,7 +1152,8 @@ button { font-family: inherit; }
 .weapon-level-btn:focus-visible,
 .level-menu-save:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .weapon-level-hint {
-    margin: 6px 0 0;
+    flex: 1 1 220px;            /* sits between the level and SET LEVEL, wraps on narrow screens */
+    margin: 0;
     font-size: 0.8rem;
     color: var(--text-dim);
     overflow-wrap: anywhere;
@@ -2512,6 +2511,20 @@ button.toast:hover .toast-view { color: var(--accent); }
     #gunListContainer { flex-direction: column; }
     .left-panel { width: 100%; max-height: 40vh; }
     .right-panel { width: 100%; max-height: none; }
+    /* Phones: the gun panel is too short to pin the whole header, so only the row with the
+       gun name and MULTIPLAYER / DMZ / WARZONE stays pinned */
+    .camo-header { position: static; display: contents; }
+    .camo-header > .title-row {
+        position: sticky;
+        top: -20px;
+        z-index: 6;
+        margin: -20px -24px 6px;
+        padding: 16px 24px 10px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+        border-radius: 10px 10px 0 0;
+    }
+    .camo-header > :last-child { margin-bottom: 12px; }
     .toggle-button.secondary-toggle { margin-left: 0; }
     /* Export / Import / Reset drop under the title instead of running off the edge */
     .app-header { flex-wrap: wrap; }

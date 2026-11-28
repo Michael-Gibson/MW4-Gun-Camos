@@ -6,7 +6,7 @@ A plain HTML/CSS/JS tracker for Call of Duty: Modern Warfare 4. Game data is in 
 
 The owner wants these project agents (in `.claude/agents/`) used every time we work on this app:
 
-- **mw4-update-scout:** run it at the start of each session, in the background, to check for new MW4 changes (patches, seasons, weapons, camos, DMZ) against `mw4-data.js`. Share what it finds and offer to add it.
+- **mw4-update-scout:** run it at the start of a session, in the background, but **at most once a day**: skip it if it already ran that day (the last check date is kept in the `update-scout-once-a-day` memory note). Run it again after a known game update, even on the same day. It checks for new MW4 changes (patches, seasons, weapons, camos, DMZ) against `mw4-data.js`. Share what it finds and offer to add it.
 - **mw4-researcher:** use it for any MW4 fact that goes into `mw4-data.js` (challenges, costs, weapons). It cross-checks several sources. Don't add game data from memory.
 - **mw4-feature-scout:** run it when planning what to build next, or at the end of a piece of work, to suggest features that would help players track MW4 progress.
 
